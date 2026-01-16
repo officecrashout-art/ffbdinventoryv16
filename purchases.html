@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+  
+  <style>
+  :root {
+    --primary: #1abc9c;           /* TEAL */
+    --primary-soft: rgba(26,188,156,0.12);
+    --bg: #f4f7f6;
+    --card: #fff;
+    --border: #dee2e6;
+  }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg);
+    padding: 20px;
+  }
+  
+  .panel {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+  
+  /* New Supplier Section */
+  #newSupFields {
+    display: none;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px dashed #ccc;
+    margin-top: 10px;
+    grid-column: 1 / -1;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+
+  th {
+    background: #f1f3f4;
+    text-align: left;
+    padding: 12px;
+    border-bottom: 2px solid #ddd;
+    font-size: 13px;
+  }
+
+  td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  /* Buttons */
+  .btn{
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    transition: all 0.25s ease;
+  }
+
+  .btn-primary{
+    background: linear-gradient(135deg, #1abc9c, #16a085); /* TEAL */
+    box-shadow: 0 10px 20px rgba(26,188,156,0.35);
+    color: #fff;
+  }
+
+  .btn-primary:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 28px rgba(26,188,156,0.45);
+  }
+
+  .btn-outline:hover{
+    background: var(--primary-soft);
+    border-color: var(--primary);
+  }
+
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-box {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 450px;
+  }
+  
+  .select2-container .select2-selection--single {
+    height: 40px !important;
+    border-color: #ccc !important;
+    display: flex;
+    align-items: center;
+  }
+</style>
+
+</head>
+<body>
+
+<div class="panel">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 style="margin:0; color:var(--primary);"><i class="fas fa-file-invoice"></i> New Purchase Order</h2>
+    <div>
+      <label style="display:inline;">PO #</label>
+      <input type="text" id="poID" readonly style="width:140px; background:#eee; font-weight:bold; text-align:center; display:inline-block; margin-left:10px;">
+    </div>
+  </div>
+  
+  <div class="form-row" style="margin-top:20px;">
+    <div style="grid-column: span 2;">
+       <label>Supplier</label>
+       <select id="poSupplier" onchange="toggleSupplier()">
+         <option value="">Select Supplier...</option>
+         <option value="NEW">+ Create New Supplier</option>
+       </select>
+       
+       <div id="newSupFields" class="form-row">
+          <div><label>Supplier Name</label><input type="text" id="nsName"></div>
+          <div><label>Contact/Phone</label><input type="text" id="nsContact"></div>
+          <div><label>City</label><input type="text" id="nsCity"></div>
+          <div><label>Address</label><input type="text" id="nsAddress"></div>
+       </div>
+    </div>
+    
+    <div><label>Bill/Reference #</label><input type="text" id="poBill"></div>
+    <div><label>Date</label><input type="date" id="poDate"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h3 style="margin:0;">Items</h3>
+    <button class="btn btn-success" onclick="openNewItemModal()"><i class="fas fa-plus"></i> Create New Product</button>
+  </div>
+  
+  <table id="poTable">
+    <thead>
+      <tr><th width="35%">Product</th><th width="15%">Size</th><th width="10%">Qty</th><th width="15%">Unit Cost</th><th width="15%">Total</th><th width="5%"></th></tr>
+    </thead>
+    <tbody id="poBody"></tbody>
+  </table>
+  <button class="btn btn-outline" onclick="addRow()" style="margin-top:15px;">+ Add Line Item</button>
+  
+  <div style="text-align:right; margin-top:25px; font-size:1.5rem; font-weight:bold; color:var(--primary);">
+    Total: <span id="grandTotal">0.00</span>
+  </div>
+</div>
+
+<div style="text-align:right;">
+  <button class="btn btn-primary" onclick="savePO()" style="padding:12px 40px; font-size:16px;">
+    <i class="fas fa-save"></i> Save Purchase Order
+  </button>
+</div>
+
+<div id="newItemModal" class="modal">
+  <div class="modal-box">
+    <h3 style="margin-top:0;">Create New Product</h3>
+    <div class="form-row">
+      <div><label>Name</label><input type="text" id="niName"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Category</label><input type="text" id="niCat"></div>
+      <div><label>Brand</label><input type="text" id="niBrand"></div>
+    </div>
+    <div style="text-align:right; margin-top:20px;">
+      <button class="btn btn-outline" onclick="$('#newItemModal').hide()">Cancel</button>
+      <button class="btn btn-primary" onclick="createNewItem()">Create & Add</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+<script>
+  let db = { items: [], suppliers: [] };
+
+  $(document).ready(() => {
+    google.script.run.withSuccessHandler(init).getPurchaseStartupData();
+    $('#poDate').val(new Date().toISOString().split('T')[0]);
+    $('#poID').val('PO-' + Math.floor(100000 + Math.random() * 900000));
+  });
+
+  function init(data) {
+    db = data;
+    const supSel = $('#poSupplier');
+    data.suppliers.forEach(s => supSel.append(new Option(s['Supplier Name'], s['Supplier ID'])));
+    
+    supSel.select2({ placeholder: "Select Supplier...", width: '100%' });
+    addRow();
+  }
+
+  function toggleSupplier() {
+    if($('#poSupplier').val() === 'NEW') {
+      $('#newSupFields').css('display', 'grid');
+    } else {
+      $('#newSupFields').hide();
+    }
+  }
+
+  function addRow() {
+    const id = Date.now();
+    const row = `
+      <tr id="row-${id}">
+        <td><select class="item-sel" style="width:100%"></select></td>
+        <td><input type="text" class="size" placeholder="S, M..."></td>
+        <td><input type="number" class="qty" oninput="calc('${id}')" value="1"></td>
+        <td><input type="number" class="cost" oninput="calc('${id}')" value="0"></td>
+        <td class="total" style="font-weight:bold;">0.00</td>
+        <td><i class="fas fa-trash" style="color:red; cursor:pointer;" onclick="$('#row-${id}').remove(); calcTotal();"></i></td>
+      </tr>`;
+    $('#poBody').append(row);
+    
+    const sel = $(`#row-${id} .item-sel`);
+    sel.append('<option></option>');
+    db.items.forEach(i => sel.append(new Option(`${i['Item Name']} (${i['Item ID']})`, i['Item ID'])));
+    sel.select2({ placeholder: "Select Product", width: '100%' });
+  }
+
+  function calc(id) {
+    const r = $(`#row-${id}`);
+    const q = parseFloat(r.find('.qty').val()) || 0;
+    const c = parseFloat(r.find('.cost').val()) || 0;
+    r.find('.total').text((q*c).toFixed(2));
+    calcTotal();
+  }
+
+  function calcTotal() {
+    let t = 0;
+    $('.total').each(function() { t += parseFloat($(this).text()) || 0; });
+    $('#grandTotal').text(t.toLocaleString());
+  }
+
+  function savePO() {
+    const supVal = $('#poSupplier').val();
+    if(!supVal) return alert("Select Supplier");
+
+    // Supplier Data Object
+    const supplier = {
+      isNew: supVal === 'NEW',
+      name: supVal === 'NEW' ? $('#nsName').val() : $('#poSupplier option:selected').text(),
+      contact: $('#nsContact').val(),
+      city: $('#nsCity').val(),
+      address: $('#nsAddress').val(),
+      state: '' // Add field if needed
+    };
+
+    if(supplier.isNew && !supplier.name) return alert("Enter Supplier Name");
+
+    // Gather Items
+    const items = [];
+    $('#poBody tr').each(function() {
+      const id = $(this).find('.item-sel').val();
+      if(id) {
+        items.push({
+          id: id,
+          name: $(this).find('.item-sel option:selected').text().split(' (')[0],
+          size: $(this).find('.size').val(),
+          qty: $(this).find('.qty').val(),
+          cost: $(this).find('.cost').val(),
+          total: $(this).find('.total').text(),
+          category: 'Purchase' 
+        });
+      }
+    });
+
+    if(items.length === 0) return alert("Add at least one item");
+
+    const poData = {
+      id: $('#poID').val(),
+      supId: supplier.isNew ? null : supVal,
+      supName: supplier.name,
+      billNum: $('#poBill').val(),
+      total: parseFloat($('#grandTotal').text().replace(/,/g, ''))
+    };
+
+    $(event.target).text('Saving...').prop('disabled', true);
+
+    google.script.run.withSuccessHandler(() => {
+      alert("PO Saved Successfully!");
+      google.script.host.close();
+    }).soSaveOrUpdatePO(poData, items, supplier);
+  }
+
+  // --- NEW PRODUCT LOGIC ---
+  function openNewItemModal() { $('#newItemModal').css('display','flex'); }
+  
+  function createNewItem() {
+    const item = { name: $('#niName').val(), category: $('#niCat').val(), brand: $('#niBrand').val() };
+    if(!item.name) return alert("Enter Name");
+    
+    google.script.run.withSuccessHandler(res => {
+      db.items.push({ 'Item ID': res.id, 'Item Name': res.name });
+      // Refresh dropdowns
+      $('.item-sel').each(function() {
+        const val = $(this).val();
+        $(this).append(new Option(`${res.name} (${res.id})`, res.id));
+        $(this).val(val);
+      });
+      $('#newItemModal').hide();
+      alert("Item Created!");
+    }).poCreateInventoryItem(item);
+  }
+</script>
+</body>
+</html>

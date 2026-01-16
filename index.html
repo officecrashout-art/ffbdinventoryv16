@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <style>
+    /* ---------- FALLBACK THEME VARS (so this module never breaks) ---------- */
+    :root{
+      --bg: #f4f7fb;
+      --bg-card:#ffffff;
+      --bg-hover: rgba(0,0,0,0.03);
+      --border: rgba(15,23,42,0.08);
+      --text-main:#0f172a;
+      --text-muted:#64748b;
+      --shadow: 0 12px 32px rgba(2,6,23,0.08);
+      --shadow-soft: 0 6px 18px rgba(2,6,23,0.08);
+      --radius: 18px;
+      --accent:#1abc9c;
+    }
+    body[data-theme="dark"]{
+      --bg: #0b1220;
+      --bg-card:#0f172a;
+      --bg-hover: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.08);
+      --text-main:#e5e7eb;
+      --text-muted:#94a3b8;
+      --shadow: 0 14px 36px rgba(0,0,0,0.35);
+      --shadow-soft: 0 8px 20px rgba(0,0,0,0.35);
+    }
+
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(26,188,156,0.20), transparent 60%),
+                  radial-gradient(900px 500px at 100% 10%, rgba(52,152,219,0.18), transparent 55%),
+                  var(--bg);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      padding: 22px;
+    }
+
+    /* ---------- TOP HEADER ---------- */
+    .topbar{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 16px;
+      margin: 6px auto 18px;
+      max-width: 1200px;
+    }
+    .topbar .titlewrap{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+    }
+    .topbar h1{
+      margin:0;
+      font-size: 18px;
+      letter-spacing: 0.2px;
+    }
+    .topbar .subtitle{
+      margin:0;
+      font-size: 12px;
+      color: var(--text-muted);
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      color: var(--text-muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    /* ---------- GRID LAYOUT ---------- */
+    .dashboard-grid{
+      max-width: 1200px;
+      margin: 0 auto;
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+      padding-bottom: 40px;
+    }
+
+    /* ---------- STAT CARDS ---------- */
+    .stat-card{
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 22px;
+      position:relative;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
+      overflow:hidden;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .stat-card::before{
+      content:"";
+      position:absolute;
+      inset: -2px;
+      background: radial-gradient(600px 120px at 20% 0%, rgba(255,255,255,0.10), transparent 55%);
+      pointer-events:none;
+    }
+    .stat-card:hover{
+      transform: translateY(-4px);
+      box-shadow: var(--shadow);
+    }
+    .stat-icon-box{
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 20px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(6px);
+    }
+    .stat-title{
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+    }
+    .stat-value{
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-top: 6px;
+    }
+    .stat-desc{
+      font-size: 12px;
+      margin-top: 6px;
+      color: var(--text-muted);
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+
+    .blue-theme{ background: rgba(52,152,219,0.14); color:#3498db; }
+    .green-theme{ background: rgba(46,204,113,0.14); color:#2ecc71; }
+    .red-theme{ background: rgba(231,76,60,0.14); color:#e74c3c; }
+    .orange-theme{ background: rgba(243,156,18,0.14); color:#f39c12; }
+    .purple-theme{ background: rgba(155,89,182,0.14); color:#9b59b6; }
+
+    /* ---------- PANELS ---------- */
+    .dash-panel{
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .panel-header{
+      margin-bottom: 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .panel-title{
+      font-size: 14px;
+      font-weight: 800;
+      margin:0;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+    .panel-title i{ opacity: 0.9; }
+
+    /* ---------- SEGMENT TOGGLE ---------- */
+    .segmented{
+      display:inline-flex;
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 4px;
+      user-select:none;
+    }
+    .segmented button{
+      border:0;
+      background:transparent;
+      color: var(--text-muted);
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor:pointer;
+      transition: .15s ease;
+    }
+    .segmented button.active{
+      background: var(--bg-card);
+      color: var(--text-main);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border);
+    }
+    .segmented button:hover{ filter: brightness(1.05); }
+
+    /* ---------- LISTS ---------- */
+    .premium-list{
+      list-style:none;
+      padding:0; margin:0;
+      overflow:auto;
+      flex:1;
+    }
+    .premium-list li{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      transition: .18s ease;
+    }
+    .premium-list li:hover{
+      background: var(--bg-hover);
+      padding-left: 10px;
+      padding-right: 10px;
+      border-radius: 10px;
+    }
+    .premium-list li:last-child{ border-bottom:none; }
+
+    .rank-badge{
+      width: 24px; height: 24px;
+      background: var(--bg-hover);
+      color: var(--text-muted);
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 800;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin-right: 10px;
+      border: 1px solid var(--border);
+    }
+
+    /* ---------- TABLE ---------- */
+    table{ width:100%; border-collapse: collapse; }
+    th{
+      text-align:left;
+      padding: 12px 10px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+    }
+    td{
+      padding: 14px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+      font-size: 13px;
+    }
+    tbody tr:hover td{ background: var(--bg-hover); }
+
+    .status-pill{
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid var(--border);
+      display:inline-block;
+    }
+    .st-Paid{ background: rgba(46,204,113,0.14); color:#2ecc71; }
+    .st-Unpaid{ background: rgba(231,76,60,0.14); color:#e74c3c; }
+    .st-Partial{ background: rgba(241,196,15,0.14); color:#f1c40f; }
+
+    /* ---------- ALERT BADGES ---------- */
+    .stock-crit{
+      background: #c0392b;
+      color:#fff;
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+    .stock-warn{
+      background: rgba(243,156,18,0.18);
+      color:#f39c12;
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(243,156,18,0.25);
+    }
+
+    /* ---------- GRID SLOTS ---------- */
+    .slot-main-chart{ grid-column: span 3; height: 390px; }
+    .slot-pie-chart{ grid-column: span 1; height: 390px; }
+    .slot-recent{ grid-column: span 2; min-height: 320px; }
+    .slot-list{ grid-column: span 1; min-height: 320px; }
+
+    /* ---------- LOADER ---------- */
+    #loader{
+      display:flex;
+      height: 60vh;
+      justify-content:center;
+      align-items:center;
+      color: var(--text-muted);
+      gap: 12px;
+      flex-direction:column;
+    }
+    #loader .hint{ font-size: 12px; }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 1100px){
+      .dashboard-grid{ grid-template-columns: repeat(2, 1fr); }
+      .slot-main-chart{ grid-column: span 2; }
+      .slot-pie-chart{ grid-column: span 2; height: 320px; }
+      .slot-recent{ grid-column: span 2; }
+      .slot-list{ grid-column: span 1; }
+    }
+    @media (max-width: 650px){
+      body{ padding: 14px; }
+      .dashboard-grid{ grid-template-columns: 1fr; }
+      .slot-main-chart,.slot-pie-chart,.slot-recent,.slot-list{ grid-column: span 1; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="topbar">
+    <div class="titlewrap">
+      <h1>Dashboard</h1>
+      <p class="subtitle">
+        <i class="fa-solid fa-sparkles"></i>
+        Premium analytics for Sales, Profit & Inventory
+      </p>
+    </div>
+    <div class="pill">
+      <i class="fa-regular fa-clock"></i>
+      <span id="lastSync">Syncing…</span>
+    </div>
+  </div>
+
+  <div id="loader">
+    <i class="fas fa-circle-notch fa-spin fa-3x"></i>
+    <div class="hint">Loading dashboard data…</div>
+  </div>
+
+  <div id="dashboard" class="dashboard-grid" style="display:none;">
+
+    <div class="stat-card">
+      <div class="stat-icon-box blue-theme"><i class="fas fa-wallet"></i></div>
+      <div class="stat-title">Total Revenue</div>
+      <div class="stat-value" id="kpiSales">…</div>
+      <div class="stat-desc"><i class="fa-solid fa-chart-line" style="color:#2ecc71;"></i> Lifetime sales</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box green-theme"><i class="fas fa-money-bill-wave"></i></div>
+      <div class="stat-title">Cash Received</div>
+      <div class="stat-value" id="kpiRec">…</div>
+      <div class="stat-desc"><i class="fa-solid fa-circle-check" style="color:#2ecc71;"></i> Actual cash flow</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box red-theme"><i class="fas fa-hand-holding-usd"></i></div>
+      <div class="stat-title">Unpaid Due</div>
+      <div class="stat-value" id="kpiDue">…</div>
+      <div class="stat-desc"><i class="fa-solid fa-triangle-exclamation" style="color:#e74c3c;"></i> Pending collection</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box orange-theme"><i class="fas fa-boxes"></i></div>
+      <div class="stat-title">Inventory Value</div>
+      <div class="stat-value" id="kpiStock">…</div>
+      <div class="stat-desc"><i class="fa-solid fa-box" style="color:#f39c12;"></i> Asset valuation</div>
+    </div>
+
+    <!-- NEW: PROFIT KPI -->
+    <div class="stat-card">
+      <div class="stat-icon-box purple-theme"><i class="fas fa-coins"></i></div>
+      <div class="stat-title">Total Profit</div>
+      <div class="stat-value" id="kpiProfit">…</div>
+      <div class="stat-desc"><i class="fa-solid fa-bolt" style="color:#9b59b6;"></i> Gross / net (from your sheet)</div>
+    </div>
+
+    <div class="dash-panel slot-main-chart">
+      <div class="panel-header">
+        <h3 class="panel-title"><i class="fa-solid fa-chart-area" style="color:var(--accent);"></i> Sales Analytics</h3>
+
+        <!-- NEW: TOGGLE -->
+        <div class="segmented" role="tablist" aria-label="Analytics Range">
+          <button class="active" data-grain="month" id="btnMonth">Month</button>
+          <button data-grain="day" id="btnDay">Day</button>
+          <button data-grain="year" id="btnYear">Year</button>
+        </div>
+      </div>
+      <div style="flex:1; position:relative;">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+
+    <div class="dash-panel slot-pie-chart">
+      <div class="panel-header"><h3 class="panel-title"><i class="fa-solid fa-layer-group" style="color:#3498db;"></i> Categories</h3></div>
+      <div style="flex:1; position:relative;"><canvas id="pieChart"></canvas></div>
+    </div>
+
+    <div class="dash-panel slot-list">
+      <div class="panel-header"><h3 class="panel-title"><i class="fas fa-map-marker-alt" style="color:#3498db;"></i> Top Cities</h3></div>
+      <ul class="premium-list" id="cityList"></ul>
+    </div>
+
+    <div class="dash-panel slot-recent">
+      <div class="panel-header"><h3 class="panel-title"><i class="fa-solid fa-receipt" style="color:#1abc9c;"></i> Recent Orders</h3></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th><th>Customer</th><th>Status</th><th style="text-align:right">Total</th>
+          </tr>
+        </thead>
+        <tbody id="recentTable"></tbody>
+      </table>
+    </div>
+
+    <div class="dash-panel slot-list">
+      <div class="panel-header"><h3 class="panel-title"><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Low Stock</h3></div>
+      <ul class="premium-list" id="alertList"></ul>
+    </div>
+
+  </div>
+
+  <script>
+    let rawSales = [];          // [{date:'YYYY-MM-DD', revenue:n, profit:n}]
+    let mainChartInstance = null;
+    let pieChartInstance = null;
+
+    window.onload = function() {
+      google.script.run.withSuccessHandler(render).getDashboardData();
+    };
+
+    function render(data) {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'grid';
+
+      // pretty "last sync"
+      const now = new Date();
+      document.getElementById('lastSync').textContent =
+        now.toLocaleString(undefined, { weekday:'short', year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+      const fmt = n => '৳' + Number(n || 0).toLocaleString();
+
+      // 1) KPIs
+      document.getElementById('kpiSales').innerText = fmt(data.kpi.sales);
+      document.getElementById('kpiRec').innerText = fmt(data.kpi.received);
+      document.getElementById('kpiDue').innerText = fmt(data.kpi.due);
+      document.getElementById('kpiStock').innerText = fmt(data.kpi.stock);
+      const profit = Number(data.kpi.profit || 0);
+const profitEl = document.getElementById('kpiProfit');
+
+// show negative properly: -৳xxx
+profitEl.innerText = (profit < 0 ? '-' : '') + fmt(Math.abs(profit));
+
+// make loss red
+profitEl.style.color = profit < 0 ? '#e74c3c' : 'var(--text-main)';
+
+// optional small badge text under value
+let badge = document.getElementById('profitBadge');
+if (!badge) {
+  badge = document.createElement('div');
+  badge.id = 'profitBadge';
+  badge.style.marginTop = '6px';
+  badge.style.fontSize = '12px';
+  badge.style.fontWeight = '900';
+  badge.style.letterSpacing = '0.6px';
+  profitEl.parentElement.appendChild(badge);
+}
+badge.innerText = profit < 0 ? 'LOSS' : 'PROFIT';
+badge.style.color = profit < 0 ? '#e74c3c' : '#2ecc71';
+
+
+      // 2) Cities
+      document.getElementById('cityList').innerHTML = (data.topCities || []).map((c,i) => `
+        <li>
+          <div style="display:flex; align-items:center;">
+            <span class="rank-badge">${i+1}</span> ${escapeHtml(c.city)}
+          </div>
+          <span style="font-weight:800;">${fmt(c.total)}</span>
+        </li>
+      `).join('') || `<li style="justify-content:center; color:var(--text-muted); padding:20px;">No city data</li>`;
+
+      // 3) Recent table
+      document.getElementById('recentTable').innerHTML = (data.recent || []).map(r => `
+        <tr>
+          <td style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight:800;">${escapeHtml(String(r.id || ""))}</td>
+          <td>${escapeHtml(r.name || "")}</td>
+          <td><span class="status-pill st-${escapeHtml(r.status || "Unpaid")}">${escapeHtml(r.status || "Unpaid")}</span></td>
+          <td style="text-align:right; font-weight:900;">${fmt(r.amount)}</td>
+        </tr>
+      `).join('') || `<tr><td colspan="4" style="color:var(--text-muted); text-align:center; padding:26px;">No recent orders</td></tr>`;
+
+      // 4) Low stock
+      if (!data.lowStock || data.lowStock.length === 0) {
+        document.getElementById('alertList').innerHTML =
+          '<li style="justify-content:center; color:var(--text-muted); padding:20px;">Stock levels are healthy</li>';
+      } else {
+        document.getElementById('alertList').innerHTML = data.lowStock.map(item => {
+          const isZero = Number(item.qty) === 0;
+          return `
+            <li>
+              <div>
+                <div style="font-weight:900; ${isZero ? 'color:#e74c3c' : ''}">${escapeHtml(item.name || "")}</div>
+                <div style="font-size:11px; color:var(--text-muted);">Level: ${escapeHtml(String(item.level))}</div>
+              </div>
+              <span class="${isZero ? 'stock-crit' : 'stock-warn'}">
+                ${isZero ? 'OUT OF STOCK' : escapeHtml(String(item.qty)) + ' Left'}
+              </span>
+            </li>`;
+        }).join('');
+      }
+
+      // 5) Store raw sales for toggle grouping
+      rawSales = data.rawSales || [];
+
+      // 6) Charts (dark-mode aware)
+      buildOrUpdateCharts('month', data);
+
+      // 7) Toggle handlers
+      document.querySelectorAll('.segmented button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.segmented button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          buildOrUpdateCharts(btn.dataset.grain, data);
+        });
+      });
+    }
+
+    function buildOrUpdateCharts(grain, data) {
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const textColor = isDark ? '#8b949e' : '#64748b';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(2,6,23,0.06)';
+
+      // ---- Group rawSales by grain ----
+      const grouped = groupSales(rawSales, grain);
+      const labels = grouped.labels;
+      const revenue = grouped.revenue;
+      const profit = grouped.profit;
+
+      // ---- MAIN: Revenue + Profit ----
+      const ctx = document.getElementById('mainChart');
+
+      if (mainChartInstance) mainChartInstance.destroy();
+
+      mainChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Revenue',
+              data: revenue,
+              borderColor: '#1abc9c',
+              backgroundColor: 'rgba(26, 188, 156, 0.12)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2,
+              pointRadius: 0
+            },
+            {
+              label: 'Profit',
+              data: profit,
+              borderColor: '#9b59b6',
+              backgroundColor: 'rgba(155, 89, 182, 0.10)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              display: true,
+              labels: { color: textColor, usePointStyle: true, boxWidth: 8, boxHeight: 8 }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ৳${Number(ctx.parsed.y || 0).toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: textColor, maxRotation: 0, autoSkip: true }
+            },
+            y: {
+              grid: { color: gridColor },
+              ticks: {
+                color: textColor,
+                callback: (v) => '৳' + Number(v || 0).toLocaleString()
+              }
+            }
+          }
+        }
+      });
+
+      // ---- PIE ----
+      const pieCtx = document.getElementById('pieChart');
+      if (pieChartInstance) pieChartInstance.destroy();
+
+      pieChartInstance = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: (data.pie?.labels || []),
+          datasets: [{
+            data: (data.pie?.values || []),
+            backgroundColor: ['#3498db','#e74c3c','#f1c40f','#2ecc71','#9b59b6','#1abc9c','#e67e22'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { color: textColor, boxWidth: 10 } }
+          }
+        }
+      });
+    }
+
+    function groupSales(rows, grain) {
+      // rows: [{date:'YYYY-MM-DD', revenue:n, profit:n}]
+      const map = new Map();
+
+      const toKey = (d) => {
+        const dt = new Date(d);
+        if (isNaN(dt)) return null;
+
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth()+1).padStart(2,'0');
+        const day = String(dt.getDate()).padStart(2,'0');
+
+        if (grain === 'day')  return `${y}-${m}-${day}`;
+        if (grain === 'year') return `${y}`;
+        // month default
+        return `${y}-${m}`;
+      };
+
+      for (const r of (rows || [])) {
+        const key = toKey(r.date);
+        if (!key) continue;
+
+        const cur = map.get(key) || { revenue: 0, profit: 0 };
+        cur.revenue += Number(r.revenue || 0);
+        cur.profit  += Number(r.profit || 0);
+        map.set(key, cur);
+      }
+
+      // sort keys chronologically
+      const keys = Array.from(map.keys()).sort((a,b) => a.localeCompare(b));
+      const labels = keys.map(k => prettyLabel(k, grain));
+      const revenue = keys.map(k => map.get(k).revenue);
+      const profit  = keys.map(k => map.get(k).profit);
+
+      return { labels, revenue, profit };
+    }
+
+    function prettyLabel(key, grain){
+      if (grain === 'year') return key;
+      if (grain === 'day')  return key; // already YYYY-MM-DD
+      // month key: YYYY-MM
+      const [y,m] = key.split('-');
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${monthNames[(Number(m)-1)]} ${String(y).slice(-2)}`;
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+  </script>
+</body>
+</html>

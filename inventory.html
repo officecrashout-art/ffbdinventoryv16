@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+
+ <style>
+  /* ========= THEME TOKENS (ONE THEME FOR WHOLE SYSTEM) ========= */
+  :root{
+    --primary: #1abc9c;
+    --primary-2: #3498db;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+
+    /* Light */
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --card-2: #ffffff;          /* secondary surface */
+    --muted: #64748b;
+    --text: #0f172a;
+
+    --border: rgba(15,23,42,0.10);
+    --border-strong: rgba(15,23,42,0.16);
+
+    --shadow: 0 14px 34px rgba(2,6,23,0.10);
+    --shadow-soft: 0 8px 22px rgba(2,6,23,0.08);
+
+    --radius: 16px;
+    --radius-sm: 12px;
+    --ring: 0 0 0 4px rgba(26,188,156,0.18);
+
+    /* Surface tints (avoid hard white / hard black) */
+    --tint: rgba(2,6,23,0.03);
+    --tint-2: rgba(2,6,23,0.06);
+
+    /* Backward-compatible aliases (for other modules using old var names) */
+    --bg-card: var(--card);
+    --text-main: var(--text);
+    --text-muted: var(--muted);
+    --bg-hover: var(--tint);
+  }
+
+  /* ========= DARK MODE (works with html/body data-theme + .dark class) ========= */
+  html[data-theme="dark"],
+  body[data-theme="dark"],
+  :root[data-theme="dark"],
+  .dark,
+  .dark body{
+    --bg: #0b1220;
+    --card: #0f172a;          /* main surface */
+    --card-2: #111c33;        /* secondary surface */
+    --muted: #94a3b8;
+    --text: #e5e7eb;
+
+    --border: rgba(255,255,255,0.09);
+    --border-strong: rgba(255,255,255,0.14);
+
+    --shadow: 0 14px 36px rgba(0,0,0,0.50);
+    --shadow-soft: 0 8px 20px rgba(0,0,0,0.45);
+
+    --ring: 0 0 0 4px rgba(26,188,156,0.22);
+
+    /* Key fix: tinted surfaces in dark (NO hard whites) */
+    --tint: rgba(255,255,255,0.05);
+    --tint-2: rgba(255,255,255,0.08);
+
+    --bg-hover: rgba(255,255,255,0.06);
+  }
+
+  /* ========= BASE ========= */
+  body{
+    margin:0;
+    font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(26,188,156,0.18), transparent 60%),
+      radial-gradient(900px 500px at 100% 10%, rgba(52,152,219,0.14), transparent 55%),
+      var(--bg);
+  }
+
+  /* ========= PAGE WRAPPER ========= */
+  .inventory-container{
+    padding: 22px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ========= ACTION BAR (FIXED: uses theme surfaces, not white) ========= */
+  .action-bar{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    padding: 18px;
+    margin-bottom: 18px;
+    display:flex;
+    flex-direction:column;
+    gap: 14px;
+    overflow:hidden;
+    position: relative;
+  }
+  .action-bar::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    background: radial-gradient(600px 160px at 10% 0%, rgba(255,255,255,0.12), transparent 55%);
+    pointer-events:none;
+    opacity: 0.9;
+  }
+  html[data-theme="dark"] .action-bar::before,
+  body[data-theme="dark"] .action-bar::before,
+  .dark .action-bar::before{
+    /* reduce “white shine” in dark */
+    background: radial-gradient(600px 160px at 10% 0%, rgba(255,255,255,0.06), transparent 55%);
+  }
+
+  .action-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 12px;
+  }
+
+  .page-title{
+    margin:0;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .page-title .dot{
+    width: 10px; height: 10px; border-radius: 999px;
+    background: var(--primary);
+    box-shadow: 0 0 0 5px rgba(26,188,156,0.18);
+  }
+  .page-subtitle{
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ========= FILTER ROW (FIXED: no light-only backgrounds) ========= */
+  .filter-row{
+    display:flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items:center;
+    background: var(--tint);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ========= INPUTS ========= */
+  input, select{
+    width:100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-sizing:border-box;
+    background: var(--card-2);
+    color: var(--text);
+    outline:none;
+    transition: .15s ease;
+    font-size: 13px;
+  }
+  input::placeholder{ color: rgba(148,163,184,0.9); }
+  html:not([data-theme="dark"]) input::placeholder,
+  body:not([data-theme="dark"]) input::placeholder{
+    color: rgba(100,116,139,0.9);
+  }
+  input:focus, select:focus{
+    border-color: rgba(26,188,156,0.45);
+    box-shadow: var(--ring);
+  }
+  label{
+    display:block;
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 6px;
+    font-weight: 700;
+  }
+
+  /* ========= BUTTONS ========= */
+  .btn{
+    padding: 9px 14px;
+    border-radius: 12px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    font-weight: 800;
+    border: 1px solid transparent;
+    font-size: 13px;
+    transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+    user-select:none;
+    white-space: nowrap;
+  }
+  .btn:active{ transform: translateY(1px); }
+
+  .btn-primary{
+    background: linear-gradient(135deg, rgba(26,188,156,1), rgba(46,204,113,1));
+    color:white;
+    box-shadow: 0 10px 22px rgba(26,188,156,0.22);
+  }
+  .btn-primary:hover{ filter: brightness(1.03); }
+
+  .btn-outline{
+    background: var(--card-2);
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+  .btn-outline:hover{ filter: brightness(1.03); box-shadow: var(--shadow-soft); }
+
+  .btn-danger{
+    background: linear-gradient(135deg, rgba(231,76,60,1), rgba(192,57,43,1));
+    color:white;
+    box-shadow: 0 10px 22px rgba(231,76,60,0.18);
+  }
+
+  /* ========= TABLE (FIXED: table surfaces use theme vars) ========= */
+  .table-responsive{
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+    overflow:hidden;
+  }
+  .inventory-table{
+    width:100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--card);
+  }
+  .inventory-table thead th{
+    background: var(--tint-2);
+    padding: 14px 14px;
+    text-align:left;
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .inventory-table tbody td{
+    padding: 14px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    vertical-align: middle;
+    background: var(--card);
+  }
+  .inventory-table tbody tr:hover td{
+    background: var(--bg-hover);
+  }
+
+  .product-img{
+    width: 50px; height: 50px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 18px rgba(2,6,23,0.12);
+  }
+
+  .mono{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 900;
+    color: color-mix(in srgb, var(--text) 70%, transparent);
+  }
+
+  /* ========= SIZE PILLS ========= */
+  /* ===== Size pills (dark-mode friendly) ===== */
+.pill{
+  display:inline-flex;
+  align-items:center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .2px;
+
+  background: rgba(26,188,156,0.10);
+  border: 1px solid rgba(26,188,156,0.38);
+  color: var(--text);
+
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+/* Dark mode: NO white fill */
+html[data-theme="dark"] .pill,
+body[data-theme="dark"] .pill,
+.dark .pill{
+  background: rgba(26,188,156,0.18);         /* darker teal fill */
+  border-color: rgba(26,188,156,0.55);
+  color: #dff7f2;                             /* readable, not white */
+}
+
+
+  /* ========= MODALS (FIXED: modal content is not white in dark) ========= */
+  .modal{
+    display:none;
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    background: rgba(2,6,23,0.60);
+    overflow-y:auto;
+    padding: 24px 12px;
+  }
+  .modal-content{
+    background: var(--card);
+    margin: 0 auto;
+    padding: 22px;
+    width: 92%;
+    max-width: 900px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    position:relative;
+  }
+
+  .modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title{
+    margin:0;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--text);
+  }
+  .modal-close{
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border: 1px solid var(--border);
+    background: var(--tint);
+    cursor:pointer;
+    color: var(--text);
+  }
+  .modal-close:hover{ filter: brightness(1.06); }
+
+  .view-row{
+    display:flex;
+    justify-content:space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stock-badge{
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    border: 1px solid var(--border);
+  }
+  .in-stock{ background: rgba(46,204,113,0.12); color:#2ecc71; border-color: rgba(46,204,113,0.22); }
+  .out-stock{ background: rgba(231,76,60,0.12); color:#e74c3c; border-color: rgba(231,76,60,0.22); }
+
+  .form-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  /* ========= PROCESSING OVERLAY (FIXED for dark) ========= */
+  #processingOverlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap: 12px;
+    backdrop-filter: blur(6px);
+    background: rgba(255,255,255,0.75);
+    color: var(--text);
+  }
+  html[data-theme="dark"] #processingOverlay,
+  body[data-theme="dark"] #processingOverlay,
+  .dark #processingOverlay{
+    background: rgba(0,0,0,0.45);
+  }
+  .spinner{
+    border: 4px solid rgba(255,255,255,0.18);
+    border-top: 4px solid var(--primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin{ 100%{ transform: rotate(360deg); } }
+
+  /* ========= SELECT2 THEME (FIXED: dark dropdown/background) ========= */
+  .select2-container .select2-selection--single{
+    height: 40px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border) !important;
+    display:flex !important;
+    align-items:center !important;
+    background: var(--card-2) !important;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered{
+    color: var(--text) !important;
+    line-height: 38px !important;
+    padding-left: 12px !important;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow{
+    top: 6px !important;
+    right: 8px !important;
+  }
+  .select2-dropdown{
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    overflow:hidden;
+    box-shadow: var(--shadow-soft);
+    background: var(--card) !important;
+    color: var(--text) !important;
+  }
+  .select2-search--dropdown .select2-search__field{
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    background: var(--card-2) !important;
+    color: var(--text) !important;
+    outline: none !important;
+  }
+  .select2-container--default .select2-results__option{
+    background: var(--card) !important;
+    color: var(--text) !important;
+  }
+  .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable{
+    background: rgba(26,188,156,0.14) !important;
+    color: var(--text) !important;
+  }
+  /* Product summary card inside View modal */
+.product-summary{
+  display:flex;
+  gap:15px;
+  margin-bottom:15px;
+  padding:15px;
+  border-radius:14px;
+
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+}
+
+</style>
+
+
+</head>
+<body>
+
+<div class="inventory-container">
+  
+  <div class="action-bar">
+    <div class="action-top">
+      <h1 style="margin:0; font-size: 1.5rem; color: var(--primary);">Inventory Items</h1>
+      <button class="btn btn-primary" onclick="invOpenModal()">+ Add Product</button>
+    </div>
+    
+    <div class="filter-row">
+      <div style="flex: 2; min-width: 200px;">
+        <input type="text" id="invSearch" placeholder="Search by Name or ID..." onkeyup="invFilter()">
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <select id="filterBrand" onchange="invFilter()">
+          <option value="">All Brands</option>
+        </select>
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <select id="filterCategory" onchange="invFilter()">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div style="flex: 1; min-width: 150px;">
+        <select id="filterSubcat" onchange="invFilter()">
+          <option value="">All Subcategories</option>
+        </select>
+      </div>
+      <button class="btn btn-outline" onclick="invResetFilters()" title="Reset Filters">
+        <i class="fas fa-undo"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="inventory-table">
+      <thead>
+        <tr><th>Image</th><th>Item ID</th><th>Item Name</th><th>Brand</th><th>Category</th><th>Size</th><th>Total Stock</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="invTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="invModal" class="modal">
+  <div class="modal-content" style="max-width: 900px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 id="invModalTitle" style="margin:0;">Add New Product</h2>
+      <i class="fas fa-times" style="cursor:pointer;" onclick="invCloseModal()"></i>
+    </div>
+    
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <div style="flex: 0 0 200px; text-align: center;">
+        <div id="imgPreview" style="width:200px; height:200px; border:2px dashed #ccc; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; overflow:hidden;">No Image</div>
+        <input type="file" id="invImgInput" accept="image/*" style="display:none;" onchange="invPreviewImage(this)">
+        <button class="btn btn-outline" onclick="document.getElementById('invImgInput').click()" style="width:100%;">Upload Photo</button>
+        <input type="hidden" id="invImgUrl">
+        <input type="hidden" id="invItemId" value="AUTO">
+      </div>
+      <div style="flex: 1; min-width: 300px;">
+        <div class="form-grid">
+          <div><label>Product Name</label><input type="text" id="invName"></div>
+          <div><label>Brand <i class="fas fa-plus-circle" onclick="invAddNew('Brands')"></i></label><select id="invBrand"></select></div>
+          <div><label>Category <i class="fas fa-plus-circle" onclick="invAddNew('Item Category')"></i></label><select id="invCategory"></select></div>
+          <div><label>Subcategory <i class="fas fa-plus-circle" onclick="invAddNew('Item Subcategory')"></i></label><select id="invSubcat"></select></div>
+          <div><label>Reorder Level</label><input type="number" id="invReorder" value="5"></div>
+        </div>
+        <h4 style="margin: 20px 0 10px 0;">Sizes & Opening Stock</h4>
+        <div id="variantContainer"></div>
+        <button class="btn btn-outline" style="margin-top:10px;" onclick="invAddVariant()">+ Add Size</button>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:30px; border-top: 1px solid #eee; padding-top: 20px;">
+      <button class="btn btn-outline" onclick="invCloseModal()">Discard</button>
+      <button class="btn btn-primary" onclick="invSave()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<div id="viewModal" class="modal">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+      <h2 id="viewTitle" style="margin:0;">Stock Details</h2>
+      <i class="fas fa-times" style="cursor:pointer;" onclick="$('#viewModal').hide()"></i>
+    </div>
+    <div id="viewContent"></div>
+    <div style="text-align:right; margin-top:20px;">
+      <button class="btn btn-primary" onclick="$('#viewModal').hide()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="processingOverlay"><div class="spinner"></div><p style="margin-top:15px;">Processing...</p></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+<script>
+  let inventoryData = { items: [], brands: [], categories: [], subcategories: [] };
+
+  document.addEventListener('DOMContentLoaded', invLoad);
+
+  function invLoad() {
+    $('#processingOverlay').css('display', 'flex');
+    google.script.run.withSuccessHandler(data => {
+      inventoryData = data;
+      renderTable(data.items);
+      
+      // Populate MODAL Dropdowns
+      populateSelect('#invBrand', data.brands);
+      populateSelect('#invCategory', data.categories);
+      populateSelect('#invSubcat', data.subcategories);
+      
+      // Populate FILTER Dropdowns
+      populateSelect('#filterBrand', data.brands, "All Brands");
+      populateSelect('#filterCategory', data.categories, "All Categories");
+      populateSelect('#filterSubcat', data.subcategories, "All Subcategories");
+
+      // Initialize Select2 for better UX
+      $('#invBrand, #invCategory, #invSubcat').select2({ dropdownParent: $('#invModal'), width: '100%' });
+      $('#filterBrand, #filterCategory, #filterSubcat').select2({ width: '100%' });
+
+      $('#processingOverlay').hide();
+    }).itemGetInventoryData();
+  }
+
+  function populateSelect(selector, list, placeholder = "Select...") {
+    const el = $(selector).empty().append(`<option value="">${placeholder}</option>`);
+    list.forEach(item => el.append(new Option(item, item)));
+  }
+
+  // --- UPDATED FILTER FUNCTION ---
+  function invFilter() {
+    const searchVal = $('#invSearch').val().toLowerCase();
+    const brandVal = $('#filterBrand').val();
+    const catVal = $('#filterCategory').val();
+    const subVal = $('#filterSubcat').val();
+
+    const filtered = inventoryData.items.filter(item => {
+      const matchSearch = (item['Item Name'] || '').toLowerCase().includes(searchVal) || 
+                          (item['Item ID'] || '').toLowerCase().includes(searchVal);
+      
+      const matchBrand = !brandVal || item['Brands'] === brandVal;
+      const matchCat = !catVal || item['Item Category'] === catVal;
+      const matchSub = !subVal || item['Item Subcategory'] === subVal;
+
+      return matchSearch && matchBrand && matchCat && matchSub;
+    });
+
+    renderTable(filtered);
+  }
+
+  function invResetFilters() {
+    $('#invSearch').val('');
+    $('#filterBrand').val('').trigger('change');
+    $('#filterCategory').val('').trigger('change');
+    $('#filterSubcat').val('').trigger('change');
+    invFilter();
+  }
+
+  function renderTable(items) {
+    const tbody = document.getElementById('invTableBody');
+    if (items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No products found matching your filters.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = items.map(item => {
+      const imgUrl = item['Image URL'];
+      const imageTag = imgUrl ? 
+        `<img src="${imgUrl}" class="product-img" onerror="this.src='https://placehold.co/50x50?text=Error'">` : 
+        `<div class="no-img-placeholder" style="width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:#eee;border-radius:8px;"><i class="fas fa-image" style="color:#ccc;"></i></div>`;
+
+      const rawSize = item['Size'] || '';
+      const sizePills = rawSize.split(',').map(s => {
+  const sizeName = s.split(':')[0].trim();
+  return sizeName ? `<span class="pill">${sizeName}</span>` : '';
+}).join('');
+
+
+      return `
+        <tr>
+          <td>${imageTag}</td>
+          <td style="font-family:monospace; font-weight:bold; color:#666;">${item['Item ID']}</td>
+          <td><b>${item['Item Name']}</b></td>
+          <td>${item['Brands']}</td>
+          <td>${item['Item Category']}</td>
+          <td>${sizePills}</td> 
+          <td style="font-weight:bold;">${item['Remaining QTY']}</td>
+          <td>
+            <button class="btn btn-outline" onclick="invViewItem('${item['Item ID']}')" title="View Stock">
+              <i class="fas fa-eye" style="color:var(--primary);"></i>
+            </button>
+            <button class="btn btn-outline" onclick="invEditItem('${item['Item ID']}')" title="Edit">
+              <i class="fas fa-pen" style="color:#555;"></i>
+            </button>
+            <button class="btn btn-outline" onclick="invDeleteItem('${item['Item ID']}')" title="Delete">
+              <i class="fas fa-trash" style="color:var(--danger);"></i>
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  function invViewItem(id) {
+    const item = inventoryData.items.find(i => i['Item ID'] === id);
+    if (!item) return;
+
+    $('#viewTitle').text(item['Item Name']);
+    const rawSizes = (item['Size'] || '').split(',');
+    
+    let html = `<div class="product-summary">
+
+                  <img src="${item['Image URL'] || 'https://placehold.co/100x100?text=No+Img'}" style="width:80px; height:80px; object-fit:cover; border-radius:8px; border:1px solid #eee;">
+                  <div>
+                    <div style="font-size:12px; color:#666;">${item['Brands']} | ${item['Item Category']}</div>
+                    <div style="font-weight:bold; font-size:18px; margin:5px 0;">${item['Item Name']}</div>
+                    <div style="font-size:14px;">Total Stock: <b>${item['Remaining QTY']}</b></div>
+                  </div>
+                </div>
+                <h4 style="border-bottom:1px solid #eee; padding-bottom:5px;">Size Breakdown</h4>`;
+    
+    html += rawSizes.map(s => {
+      const parts = s.split(':');
+      const name = parts[0].trim();
+      if(!name) return '';
+      const qty = parts.length > 1 ? parseInt(parts[1]) : 'N/A';
+      
+      let badge = '';
+      if (qty === 'N/A') badge = `<span class="stock-badge" style="background:#eee; color:#666;">Unknown</span>`;
+      else if (qty > 0) badge = `<span class="stock-badge in-stock">${qty} In Stock</span>`;
+      else badge = `<span class="stock-badge out-stock">Out of Stock</span>`;
+
+      return `<div class="view-row">
+                <span style="font-weight:500;">Size ${name}</span>
+                ${badge}
+              </div>`;
+    }).join('');
+
+    $('#viewContent').html(html);
+    $('#viewModal').show();
+  }
+
+  function invAddNew(type) {
+    const val = prompt("Enter new " + type + ":");
+    if (!val) return;
+    $('#processingOverlay').css('display', 'flex'); 
+    google.script.run
+      .withFailureHandler(err => { $('#processingOverlay').hide(); alert("Error: " + err.message); })
+      .withSuccessHandler(res => { 
+        $('#processingOverlay').hide(); 
+        if (res && res.success) { alert("Added!"); invLoad(); }
+      })
+      .itemAddNewDimension(type, val);
+  }
+
+  function invPreviewImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        $('#imgPreview').html(`<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`);
+        $('#processingOverlay').css('display', 'flex');
+        google.script.run.withSuccessHandler(url => { $('#invImgUrl').val(url); $('#processingOverlay').hide(); }).itemUploadImage(e.target.result, input.files[0].name);
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  function invAddVariant(data = null) {
+    const id = 'var-' + Date.now();
+    $('#variantContainer').append(`
+      <div id="${id}" style="display:flex; gap:10px; margin-bottom:8px;">
+        <input type="text" class="v-size" placeholder="Size" value="${data ? data.Size : ''}">
+        <input type="number" class="v-stock" placeholder="Stock" value="${data ? data.Opening : 0}">
+        <button class="btn btn-outline" onclick="this.parentElement.remove()">X</button>
+      </div>`);
+  }
+
+  function invOpenModal(item = null) {
+    // Reset modal fields
+    $('#variantContainer').empty();
+    $('#invName').val('');
+    $('#invBrand').val('').trigger('change');
+    $('#invCategory').val('').trigger('change');
+    $('#invSubcat').val('').trigger('change');
+    $('#invReorder').val('5');
+    $('#invImgUrl').val('');
+    $('#invItemId').val('AUTO');
+    $('#imgPreview').html('No Image');
+    $('#invImgInput').val(''); // clear file input
+
+    if (item) {
+      // Edit mode
+      $('#invModalTitle').text('Edit Product');
+      $('#invItemId').val(item['Item ID'] || 'AUTO');
+      $('#invName').val(item['Item Name'] || '');
+      $('#invBrand').val(item['Brands'] || '').trigger('change');
+      $('#invCategory').val(item['Item Category'] || '').trigger('change');
+      $('#invSubcat').val(item['Item Subcategory'] || '').trigger('change');
+      $('#invReorder').val(item['Reorder Level'] || 5);
+
+      const existingImg = item['Image URL'] || '';
+      $('#invImgUrl').val(existingImg);
+      if (existingImg) {
+        $('#imgPreview').html(`<img src="${existingImg}" style="width:100%; height:100%; object-fit:cover;">`);
+      }
+
+      // Parse sizes like "S:10, M:0"
+      const raw = (item['Size'] || '').split(',');
+      raw.forEach(part => {
+        const p = part.trim();
+        if (!p) return;
+        const seg = p.split(':');
+        const size = (seg[0] || '').trim();
+        const qty = seg.length > 1 ? (seg[1] || '0').trim() : '0';
+        if (size) invAddVariant({ Size: size, Opening: qty });
+      });
+
+      // If no sizes found, add a blank row
+      if ($('#variantContainer').children().length === 0) invAddVariant();
+
+    } else {
+      // Add mode
+      $('#invModalTitle').text('Add New Product');
+      invAddVariant();
+    }
+
+    $('#invModal').show();
+  }
+
+  function invEditItem(id) {
+    const item = inventoryData.items.find(i => i['Item ID'] === id);
+    if (!item) return alert('Item not found');
+    invOpenModal(item);
+  }
+
+  function invCloseModal() { 
+    $('#invModal').hide(); 
+  }
+
+  function invSave() {
+    const data = {
+      id: $('#invItemId').val() || 'AUTO',
+      name: $('#invName').val(),
+      brand: $('#invBrand').val(),
+      category: $('#invCategory').val(),
+      subcategory: $('#invSubcat').val(),
+      reorderLevel: $('#invReorder').val(),
+      imageUrl: $('#invImgUrl').val(), // if you don't upload a new image, existing URL stays here
+      variants: []
+    };
+
+    $('#variantContainer > div').each(function() {
+      const size = $(this).find('.v-size').val();
+      const openingStock = $(this).find('.v-stock').val();
+      if (size && size.trim()) {
+        data.variants.push({ size: size.trim(), openingStock: openingStock, id: "AUTO" });
+      }
+    });
+
+    if (!data.name) return alert('Product Name is required.');
+    if (data.variants.length === 0) return alert('Please add at least one size.');
+
+    $('#processingOverlay').css('display', 'flex');
+    google.script.run
+      .withFailureHandler(err => { $('#processingOverlay').hide(); alert("Error: " + (err.message || err)); })
+      .withSuccessHandler(() => location.reload())
+      .itemSaveProductWithVariants(data);
+  }
+
+  function invDeleteItem(id) { if(confirm("Delete?")) google.script.run.withSuccessHandler(() => location.reload()).itemDeleteItem(id); }
+</script>
+</body>
+</html>

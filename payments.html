@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+  
+  <style>
+   :root{
+  --primary:#20c997;
+  --bg:#0f131a;
+  --card:#151a23;
+  --border:#2a2f3a;
+  --text:#e5e7eb;
+  --muted:#9aa4b2;
+}
+
+body{
+  font-family:'Poppins',sans-serif;
+  background:var(--bg);
+  padding:20px;
+  color:var(--text);
+}
+
+.card{
+  background:var(--card);
+  border-radius:12px;
+  padding:25px;
+  border:1px solid var(--border);
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
+}
+
+label{
+  color:var(--muted);
+}
+
+input,select{
+  width:100%;
+  padding:10px;
+  background:#0f141d;
+  border:1px solid var(--border);
+  border-radius:6px;
+  box-sizing:border-box;
+  color:var(--text);
+}
+/* EXTRA vertical spacing between fields */
+.form-group{
+  .form-group{ margin-bottom: 32px; }
+  /* was ~15–18, now roomy */
+}
+
+/* Space between label and input */
+label{
+  margin-bottom: 10px;
+}
+
+/* Slightly taller inputs for air */
+input,
+select{
+  padding: 14px 14px;
+}
+
+/* Extra gap under the title */
+h2{
+  margin-bottom: 26px;
+}
+
+/* Space before the button */
+button{
+  margin-top: 12px;
+}
+
+
+  </style>
+</head>
+<body>
+
+<div class="card" style="max-width: 500px; margin: 0 auto;">
+  <h2 style="color:var(--primary); text-align:center;">Record Payment</h2>
+  
+  <div class="form-group">
+    <label>Supplier</label>
+    <select id="ptSup"></select>
+  </div>
+  
+  <div class="form-group">
+    <label>Pending PO</label>
+    <select id="ptPO" disabled><option>Select Supplier first...</option></select>
+  </div>
+  
+  <div class="form-group">
+    <label>Amount (৳)</label>
+    <input type="number" id="ptAmt">
+  </div>
+  
+  <div class="form-group">
+    <label>Payment Mode</label>
+    <select id="ptMode"><option>Cash</option><option>Bank</option><option>Mobile Money</option></select>
+  </div>
+  
+  <button onclick="pay()" style="width:100%; padding:12px; background:var(--primary); color:#06281f; border:none; border-radius:6px; font-size:16px; font-weight:600;">
+  Save Payment
+</button>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+  let db = {};
+  
+  $(document).ready(() => {
+    google.script.run.withSuccessHandler(d => {
+      db = d;
+      $('#ptSup').append('<option></option>');
+      // Added safety check if suppliers is undefined
+      if(d.suppliers) {
+        d.suppliers.forEach(s => $('#ptSup').append(new Option(s['Supplier Name'], s['Supplier ID'])));
+      }
+      $('#ptSup').select2({ placeholder: 'Select Supplier' });
+      $('#ptPO').select2();
+    }).getPaymentStartupData();
+  });
+
+  $('#ptSup').on('change', function() {
+    const sid = $(this).val();
+    const poSel = $('#ptPO').empty().prop('disabled', false).append('<option></option>');
+    
+    // Safety check for db.pos
+    if(db.pos) {
+        const pending = db.pos.filter(p => p['Supplier ID'] == sid && p['PMT Status'] !== 'Paid');
+        pending.forEach(p => poSel.append(new Option(`PO: ${p['PO ID']} (Due: ${p['PO Balance']})`, p['PO ID'])));
+        
+        if(!pending.length) poSel.append('<option disabled>No pending bills</option>');
+    }
+  });
+
+  $('#ptPO').on('change', function() {
+    const pid = $(this).val();
+    const po = db.pos.find(p => p['PO ID'] == pid);
+    if(po) $('#ptAmt').val(po['PO Balance']);
+  });
+
+  function pay() {
+    // Disable button to prevent double clicks
+    const btn = $('button');
+    btn.prop('disabled', true).text('Saving...');
+
+    const data = {
+      // date: removed, handled by server
+      id: 'PAY-' + Date.now(),
+      supId: $('#ptSup').val(),
+      supName: $('#ptSup option:selected').text(),
+      poId: $('#ptPO').val(),
+      bill: 'N/A',
+      mode: $('#ptMode').val(),
+      amount: $('#ptAmt').val()
+    };
+    
+    if(!data.poId || !data.amount) {
+        alert("Missing info");
+        btn.prop('disabled', false).text('Save Payment');
+        return;
+    }
+    
+    google.script.run
+      .withFailureHandler(error => {
+         alert("Error: " + error.message); // This will tell you exactly why it fails!
+         btn.prop('disabled', false).text('Save Payment');
+      })
+      .withSuccessHandler(() => {
+        alert("Paid successfully!");
+        // Optional: clear form instead of full reload for speed
+        $('#ptAmt').val('');
+        $('#ptPO').val(null).trigger('change');
+        btn.prop('disabled', false).text('Save Payment');
+        
+        // Or keep your reload:
+        // location.reload(); 
+      })
+      .ptSaveNewPayment(data);
+  }
+</script>
+</body>
+</html>

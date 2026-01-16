@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+
+  <style>
+    :root {
+      --primary: #20c997;          /* teal */
+      --bg: #f4f7f6;
+      --card: #fff;
+      --border: #dee2e6;
+    }
+    body { font-family: 'Poppins', sans-serif; background: var(--bg); padding: 20px; font-size: 13px; }
+    .card { background: var(--card); border-radius: 12px; padding: 25px; border: 1px solid var(--border); max-width: 800px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .step { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px dashed #ccc; }
+    .step-title { font-weight: 600; color: #555; margin-bottom: 10px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    label { display: block; margin-bottom: 5px; color: #666; font-size: 12px; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+    .btn { padding: 12px 25px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; width: 100%; margin-top: 10px; font-size: 14px; }
+    .btn-return { background: #ef4444; color: white; }
+    .btn-exchange { background: var(--primary); color: white; }
+    .info-box { background: #fff3cd; color: #856404; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px; display: none; }
+    #exchangeSection { display: none; background: #f0fdfa; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid #99f6e4; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2 style="margin-top:0; color:var(--primary);"><i class="fas fa-exchange-alt"></i> Returns & Exchanges</h2>
+
+  <div class="step">
+    <span class="step-title">1. Select Order</span>
+    <label>Search Order ID or Customer</label>
+    <select id="selOrder"><option></option></select>
+  </div>
+
+  <div class="step">
+    <span class="step-title">2. Item to Return</span>
+    <div class="row">
+      <div>
+        <label>Select Item from Order</label>
+        <select id="selRetItem" disabled><option>Select Order First</option></select>
+      </div>
+      <div>
+        <label>Qty to Return</label>
+        <input type="number" id="retQty" min="1" value="1">
+      </div>
+    </div>
+    <div id="retInfo" class="info-box"></div>
+
+    <div style="margin-top:15px;">
+      <label>Reason for Return/Exchange</label>
+      <textarea id="retReason" placeholder="Enter reason here..." rows="2"></textarea>
+    </div>
+  </div>
+
+  <div class="step" style="border:none;">
+    <span class="step-title">3. Action</span>
+    <div class="row">
+      <!-- Refund hides exchange section + submits Return -->
+      <button class="btn btn-return" onclick="startReturn()"><i class="fas fa-undo"></i> Process Refund Only</button>
+      <!-- Exchange only reveals exchange section -->
+      <button class="btn btn-exchange" onclick="showExchange()"><i class="fas fa-sync"></i> Exchange for Item</button>
+    </div>
+
+    <div id="exchangeSection">
+      <span class="step-title" style="color:#0f766e;">Select New Item</span>
+      <div class="row">
+        <div>
+          <label>New Product</label>
+          <select id="selNewItem"></select>
+        </div>
+        <div>
+          <label>Size</label>
+          <select id="selNewSize"><option>-</option></select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label>Qty</label>
+          <input type="number" id="excQty" value="1">
+        </div>
+        <div>
+          <label>New Item Price (Optional)</label>
+          <input type="number" id="newItemPrice" placeholder="Selling Price">
+        </div>
+      </div>
+      <button class="btn btn-exchange" style="margin-top:15px;" onclick="submit('Exchange')">Confirm Exchange</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+<script>
+  let db = {};
+  let currentOrderDetails = [];
+  let selectedReturnItem = null;
+
+  $(document).ready(() => {
+    google.script.run.withSuccessHandler(init).retGetStartupData();
+  });
+
+  function init(data) {
+    db = data;
+
+    $('#selOrder').select2({ placeholder: "Select Order", width: '100%' });
+    data.orders.forEach(o => {
+      $('#selOrder').append(new Option(`${o['SO ID']} - ${o['Customer Name']} (${o['SO Date']})`, o['SO ID']));
+    });
+
+    $('#selNewItem').select2({ placeholder: "Select New Product", width: '100%' });
+    data.inventory.forEach(i => {
+      $('#selNewItem').append(new Option(i['Item Name'], i['Item ID']));
+    });
+  }
+
+  $('#selOrder').on('change', function() {
+    const soId = $(this).val();
+    $('#selRetItem').empty().prop('disabled', false);
+    currentOrderDetails = db.details.filter(d => d['SO ID'] === soId && d['QTY Sold'] > 0);
+
+    if(currentOrderDetails.length === 0) {
+      $('#selRetItem').append('<option>No items available</option>');
+    } else {
+      $('#selRetItem').append('<option value="">-- Select Item --</option>');
+      currentOrderDetails.forEach((d, idx) => {
+        $('#selRetItem').append(new Option(`${d['Item Name']} (${d['Size']}) - Sold: ${d['QTY Sold']}`, idx));
+      });
+    }
+  });
+
+  $('#selRetItem').on('change', function() {
+    const idx = $(this).val();
+    if(idx === "") return;
+    selectedReturnItem = currentOrderDetails[idx];
+    $('#retQty').attr('max', selectedReturnItem['QTY Sold']);
+    $('#retInfo').text(`Refund Value: ৳${selectedReturnItem['Unit Price']} per unit`).show();
+  });
+
+  function showExchange() {
+    $('#exchangeSection').slideDown();
+  }
+
+  // Refund-only flow: hide exchange area if it was opened + reset exchange inputs, then submit Return
+  function startReturn() {
+    $('#exchangeSection').slideUp();
+
+    // Reset exchange inputs to avoid confusion
+    if ($('#selNewItem').data('select2')) {
+      $('#selNewItem').val(null).trigger('change');
+    } else {
+      $('#selNewItem').val('');
+    }
+    $('#selNewSize').empty().append(new Option('-', '-'));
+    $('#excQty').val(1);
+    $('#newItemPrice').val('');
+
+    submit('Return');
+  }
+
+  $('#selNewItem').on('change', function() {
+    const id = $(this).val();
+    const item = db.inventory.find(i => i['Item ID'] === id);
+    const sizeSel = $('#selNewSize').empty();
+    if(item && item['Size']) {
+      item['Size'].split(',').forEach(s => {
+        let sizeName = s.split(':')[0].trim();
+        sizeSel.append(new Option(s.trim(), sizeName));
+      });
+    } else {
+      sizeSel.append(new Option('-', '-'));
+    }
+  });
+
+  function submit(type) {
+    if(!selectedReturnItem) return alert("Select item to return");
+    const retQty = parseFloat($('#retQty').val());
+    const reason = $('#retReason').val();
+    if(!reason) return alert("Please provide a reason for the " + type);
+
+    const payload = {
+      type: type,
+      soId: selectedReturnItem['SO ID'],
+      invoice: selectedReturnItem['Invoice Num'],
+      custId: selectedReturnItem['Customer ID'],
+      custName: selectedReturnItem['Customer Name'],
+      reason: reason,
+      returnItemId: selectedReturnItem['Item ID'],
+      returnItemName: selectedReturnItem['Item Name'],
+      returnSize: selectedReturnItem['Size'],
+      returnQty: retQty,
+      returnPrice: parseFloat(selectedReturnItem['Unit Price']),
+    };
+
+    if(type === 'Exchange') {
+      const newItemId = $('#selNewItem').val();
+      if(!newItemId) return alert("Select new item for exchange");
+      const newItem = db.inventory.find(i => i['Item ID'] === newItemId);
+      payload.newItemId = newItemId;
+      payload.newItemName = newItem['Item Name'];
+      payload.newSize = $('#selNewSize').val();
+      payload.exchangeQty = parseFloat($('#excQty').val());
+      payload.newItemPrice = parseFloat($('#newItemPrice').val() || selectedReturnItem['Unit Price']);
+    }
+
+    $(event.target).text('Processing...').prop('disabled', true);
+    google.script.run.withSuccessHandler(res => {
+      if(res && res.error) alert("Error: " + res.error);
+      else { alert("Transaction Successful!"); google.script.host.close(); }
+    }).retProcessTransaction(payload);
+  }
+</script>
+</body>
+</html>

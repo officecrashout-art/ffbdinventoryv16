@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+  
+  <style>
+  :root{
+    --primary:#1abc9c;
+
+    /* Light defaults */
+    --bg:#f4f7f6;
+    --card:#ffffff;
+    --border:#dee2e6;
+
+    --text:#2c3e50;
+    --muted:#6c757d;
+
+    --tableHeadBg: rgba(0,0,0,0.03);
+    --rowBorder: rgba(0,0,0,0.06);
+
+    --modalOverlay: rgba(0,0,0,0.5);
+    --loaderOverlay: rgba(255,255,255,0.8);
+
+    --inputBg: transparent;
+    --inputText: var(--text);
+
+    /* badges (light) */
+    --badgeCashBg:#e3f2fd;
+    --badgeCashText:#1565c0;
+    --badgeBankBg:#f3e5f5;
+    --badgeBankText:#7b1fa2;
+  }
+
+  /* Dark mode variables (supports body.dark OR data-theme="dark") */
+  body.dark,
+  [data-theme="dark"]{
+    --bg:#0f131a;
+    --card:#1a1f2b;
+    --border: rgba(255,255,255,0.12);
+
+    --text:#e9eef5;
+    --muted:#aeb6c2;
+
+    --tableHeadBg: rgba(255,255,255,0.06);
+    --rowBorder: rgba(255,255,255,0.10);
+
+    --modalOverlay: rgba(0,0,0,0.65);
+    --loaderOverlay: rgba(0,0,0,0.65);
+
+    --inputBg: rgba(255,255,255,0.03);
+    --inputText: var(--text);
+
+    /* badges (dark) */
+    --badgeCashBg: rgba(33,150,243,0.15);
+    --badgeCashText:#9fd0ff;
+    --badgeBankBg: rgba(156,39,176,0.18);
+    --badgeBankText:#f0b6ff;
+  }
+
+  body{
+    font-family:'Poppins',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:20px;
+    margin:0;
+  }
+
+  .container{ max-width:1400px; margin:0 auto; }
+
+  /* Header & Actions */
+  .action-bar{
+    background:var(--card);
+    padding:20px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.03);
+  }
+
+  .search-box{
+    padding:10px;
+    width:250px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background: var(--inputBg);
+    color: var(--inputText);
+    outline:none;
+  }
+  .search-box::placeholder{ color: var(--muted); }
+
+  /* Buttons */
+  .btn{
+    padding:10px 20px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:500;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:0.2s;
+  }
+  .btn-primary{ background:var(--primary); color:#fff; }
+  .btn-outline{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text);
+  }
+
+  /* Table */
+  .table-responsive{
+    background:var(--card);
+    border-radius:12px;
+    border:1px solid var(--border);
+    overflow-x:auto;
+  }
+  table{ width:100%; border-collapse:collapse; min-width:800px; }
+
+  th{
+    background: var(--tableHeadBg);
+    text-align:left;
+    padding:15px;
+    border-bottom:2px solid var(--border);
+    color: var(--muted);
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  td{
+    padding:12px 15px;
+    border-bottom:1px solid var(--rowBorder);
+    vertical-align:middle;
+    color: var(--text);
+  }
+
+  /* Badges */
+  .badge{
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:600;
+  }
+  .b-cash{ background: var(--badgeCashBg); color: var(--badgeCashText); }
+  .b-bank{ background: var(--badgeBankBg); color: var(--badgeBankText); }
+
+  /* Modal */
+  .modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background: var(--modalOverlay);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+  }
+  .modal-content{
+    background:var(--card);
+    width:500px;
+    padding:30px;
+    border-radius:12px;
+    position:relative;
+    border:1px solid var(--border);
+  }
+
+  .form-group{ margin-bottom:15px; }
+  .form-group label{
+    display:block;
+    margin-bottom:5px;
+    font-weight:500;
+    color: var(--muted);
+  }
+
+  .form-control{
+    width:100%;
+    padding:10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    box-sizing:border-box;
+    background: var(--inputBg);
+    color: var(--inputText);
+    outline:none;
+  }
+
+  /* Trx read-only input (replaces inline #f9f9f9 look) */
+  .readonly-box{
+    background: rgba(0,0,0,0.04);
+    font-weight: bold;
+  }
+  body.dark .readonly-box,
+  [data-theme="dark"] .readonly-box{
+    background: rgba(255,255,255,0.06);
+  }
+
+  /* Small hint text */
+  small{ color: var(--muted); }
+
+  /* Select2 Fixes */
+  .select2-container .select2-selection--single{
+    height:40px !important;
+    border-color:var(--border) !important;
+    background: var(--inputBg) !important;
+    display:flex;
+    align-items:center;
+    color: var(--inputText) !important;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow{
+    top:7px !important;
+  }
+
+  /* Loader */
+  #loader{
+    display:flex;
+    position:fixed;
+    inset:0;
+    background: var(--loaderOverlay);
+    z-index:2000;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    color: var(--text);
+  }
+</style>
+
+</head>
+<body>
+
+<div id="loader">
+  <i class="fas fa-circle-notch fa-spin fa-3x" style="color:var(--primary)"></i>
+  <p>Loading Receipts...</p>
+</div>
+
+<div class="container">
+  <div class="action-bar">
+    <div>
+      <h2 style="margin:0; color:var(--primary);">Receipts & Payments</h2>
+      <small style="color:#888;">Manage customer payments and update balances</small>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <input type="text" id="searchInput" class="search-box" placeholder="Search receipt..." onkeyup="filterTable()">
+      <button class="btn btn-primary" onclick="openModal()">+ New Receipt</button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table id="rcTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Trx ID</th>
+          <th>Customer</th>
+          <th>Order Ref</th>
+          <th>Invoice</th>
+          <th>Mode</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody id="rcTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="rcModal" class="modal">
+  <div class="modal-content">
+    <h3 style="margin-top:0; color:var(--primary);">Record Payment</h3>
+    
+    <div class="form-group">
+      <label>Transaction ID</label>
+      <input type="text" id="rcTrxId" class="form-control readonly-box" readonly>
+
+    </div>
+
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="rcDate" class="form-control">
+    </div>
+
+    <div class="form-group">
+      <label>Customer</label>
+      <select id="rcCustomer" style="width:100%"><option></option></select>
+    </div>
+
+    <div class="form-group">
+      <label>Pending Order (Select to Pay)</label>
+      <select id="rcOrder" style="width:100%" disabled>
+        <option value="">Select Customer first...</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="display:flex; gap:15px;">
+      <div style="flex:1;">
+        <label>Invoice #</label>
+        <input type="text" id="rcInvoice" class="form-control" readonly>
+      </div>
+      <div style="flex:1;">
+        <label>Payment Mode</label>
+        <select id="rcMode" class="form-control"></select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Amount Received (৳)</label>
+      <input type="number" id="rcAmount" class="form-control" style="font-size:18px; font-weight:bold; color:var(--primary);">
+      <small style="color:#888;" id="balHint"></small>
+    </div>
+
+    <div style="text-align:right; margin-top:20px;">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReceipt()">Save Receipt</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+<script>
+  let db = { customers: [], orders: [], receipts: [], modes: [] };
+
+  $(document).ready(function() {
+    google.script.run.withSuccessHandler(init).getReceiptStartupData();
+  });
+
+  function init(data) {
+    db = data;
+    renderTable(data.receipts);
+    
+    // Populate Modes
+    $('#rcMode').empty();
+    (data.modes.length ? data.modes : ['Cash','Bank','Bkash','Nagad']).forEach(m => {
+      $('#rcMode').append(new Option(m, m));
+    });
+
+    // Populate Customers
+    $('#rcCustomer').empty().append('<option value="">Select Customer...</option>');
+    data.customers.forEach(c => {
+      $('#rcCustomer').append(new Option(c['Customer Name'], c['Customer ID']));
+    });
+
+    // Initialize Select2
+    $('#rcCustomer').select2({ dropdownParent: $('#rcModal'), placeholder: "Select Customer" });
+    $('#rcOrder').select2({ dropdownParent: $('#rcModal'), placeholder: "Select Order" });
+
+    // Event: Customer Change -> Filter Orders
+    $('#rcCustomer').on('change', function() {
+      const custId = $(this).val();
+      const orderSel = $('#rcOrder').empty().append('<option value="">Select Order...</option>');
+      
+      if(custId) {
+        orderSel.prop('disabled', false);
+        // Filter Unpaid/Partial Orders for this customer
+        const pending = db.orders.filter(o => 
+          o['Customer ID'] === custId && 
+          o['Receipt Status'] !== 'Paid'
+        );
+        
+        pending.forEach(o => {
+          orderSel.append(new Option(`Order #${o['SO ID']} (Due: ৳${o['SO Balance']})`, o['SO ID']));
+        });
+        
+        if(pending.length === 0) orderSel.append('<option disabled>No pending orders</option>');
+      } else {
+        orderSel.prop('disabled', true);
+      }
+    });
+
+    // Event: Order Change -> Fill Info
+    $('#rcOrder').on('change', function() {
+      const soId = $(this).val();
+      const order = db.orders.find(o => o['SO ID'] === soId);
+      if(order) {
+        $('#rcInvoice').val(order['Invoice Num']);
+        $('#rcAmount').val(order['SO Balance']); // Auto-fill balance
+        $('#balHint').text(`Outstanding Balance: ৳${order['SO Balance']}`);
+      } else {
+        $('#rcInvoice').val('');
+        $('#rcAmount').val('');
+        $('#balHint').text('');
+      }
+    });
+
+    $('#loader').hide();
+  }
+
+  function renderTable(list) {
+    const tbody = $('#rcTableBody').empty();
+    // Sort Newest First
+    const sorted = list.sort((a,b) => new Date(b['Trx Date']) - new Date(a['Trx Date']));
+    
+    sorted.forEach(r => {
+      const date = new Date(r['Trx Date']).toLocaleDateString();
+      const badgeClass = r['PMT Mode'] === 'Cash' ? 'b-cash' : 'b-bank';
+      
+      tbody.append(`
+        <tr>
+          <td>${date}</td>
+          <td style="font-family:monospace; font-weight:bold;">${r['Trx ID']}</td>
+          <td>${r['Customer Name']}</td>
+          <td>${r['SO ID']}</td>
+          <td>${r['Invoice Num'] || '-'}</td>
+          <td><span class="badge ${badgeClass}">${r['PMT Mode']}</span></td>
+          <td style="font-weight:bold; color:var(--primary);">৳${Number(r['Amount Received']).toLocaleString()}</td>
+        </tr>
+      `);
+    });
+  }
+
+  function openModal() {
+    $('#rcModal').css('display', 'flex');
+    $('#rcDate').val(new Date().toISOString().split('T')[0]);
+    $('#rcCustomer').val('').trigger('change');
+    $('#rcOrder').val('').trigger('change');
+    $('#rcAmount').val('');
+    
+    google.script.run.withSuccessHandler(id => $('#rcTrxId').val(id)).rcGenerateTrxID();
+  }
+
+  function closeModal() {
+    $('#rcModal').hide();
+  }
+
+  function saveReceipt() {
+    const data = {
+      trxId: $('#rcTrxId').val(),
+      date: $('#rcDate').val(),
+      custId: $('#rcCustomer').val(),
+      custName: $('#rcCustomer option:selected').text(),
+      soId: $('#rcOrder').val(),
+      invoice: $('#rcInvoice').val(),
+      mode: $('#rcMode').val(),
+      amount: parseFloat($('#rcAmount').val())
+    };
+
+    if(!data.soId || !data.custId || isNaN(data.amount) || data.amount <= 0) {
+      alert("Please select a customer, an order, and enter a valid amount.");
+      return;
+    }
+
+    $('#loader').css('display','flex').find('p').text('Processing Payment...');
+    
+    google.script.run
+      .withFailureHandler(err => {
+        $('#loader').hide();
+        alert("Error: " + err.message);
+      })
+      .withSuccessHandler(res => {
+        alert("Payment Recorded Successfully!");
+        location.reload(); // Reload to refresh data and balances
+      })
+      .rcSaveNewReceipt(data);
+  }
+
+  function filterTable() {
+    const term = $('#searchInput').val().toLowerCase();
+    const filtered = db.receipts.filter(r => 
+      r['Customer Name'].toLowerCase().includes(term) || 
+      r['Trx ID'].toLowerCase().includes(term) ||
+      r['SO ID'].toLowerCase().includes(term)
+    );
+    renderTable(filtered);
+  }
+</script>
+
+</body>
+</html>

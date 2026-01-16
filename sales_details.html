@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    <style>
+  /* ---------- THEME TOKENS ---------- */
+  :root {
+    --primary: #1abc9c;
+
+    /* Light */
+    --bg: #f4f7f6;
+    --card: #ffffff;
+    --text: #2c3e50;
+    --muted: #667085;
+    --border: #dee2e6;
+    --soft: #f8f9fa;
+    --row: #ffffff;
+    --rowAlt: #fbfbfb;
+
+    --shadow: 0 2px 8px rgba(0,0,0,0.05);
+
+    --inputBg: #ffffff;
+    --inputText: #2c3e50;
+    --inputBorder: #dee2e6;
+    --placeholder: #98a2b3;
+
+    --overlay: rgba(0,0,0,0.5);
+  }
+
+  /* Dark */
+  html[data-theme="dark"] {
+    --bg: #0f141a;
+    --card: #151b22;
+    --text: #e6edf3;
+    --muted: #a7b0bb;
+    --border: #2a3440;
+    --soft: #10161d;
+    --row: #151b22;
+    --rowAlt: #121821;
+
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+
+    --inputBg: #0f141a;
+    --inputText: #e6edf3;
+    --inputBorder: #2a3440;
+    --placeholder: #7b8794;
+
+    --overlay: rgba(0,0,0,0.65);
+  }
+
+  /* ---------- BASE ---------- */
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+  }
+
+  /* ---------- TOOLBAR ---------- */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    flex-wrap: wrap;
+    border: 1px solid var(--border);
+  }
+
+  .toolbar select,
+  .toolbar input {
+    padding: 8px 12px;
+    border: 1px solid var(--inputBorder);
+    border-radius: 6px;
+    outline: none;
+    background: var(--inputBg);
+    color: var(--inputText);
+  }
+
+  .toolbar input::placeholder { color: var(--placeholder); }
+
+  /* Make date inputs readable in dark mode */
+  input[type="date"] { color-scheme: light; }
+  html[data-theme="dark"] input[type="date"] { color-scheme: dark; }
+
+  /* ---------- BUTTONS ---------- */
+  .btn {
+    padding: 8px 16px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: 0.2s;
+    background: var(--soft);
+    color: var(--text);
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  .btn-primary:hover { opacity: 0.9; }
+
+  /* Toggle button (moon/sun) */
+  .btn-icon {
+    width: 40px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--soft);
+    color: var(--text);
+  }
+  .btn-icon:hover { filter: brightness(1.05); }
+
+  /* ---------- TABLE CARD ---------- */
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th {
+    background: var(--soft);
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+
+  td {
+    padding: 12px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--row);
+  }
+
+  tbody tr:nth-child(even) td { background: var(--rowAlt); }
+
+  /* ---------- STATUS DROPDOWN ---------- */
+  .status-dropdown {
+    background: var(--inputBg);
+    color: var(--inputText);
+    border: 1px solid var(--inputBorder);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .status-dropdown:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+  /* ---------- MODAL ---------- */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--overlay);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-content {
+    background: var(--card);
+    color: var(--text);
+    width: 90%;
+    max-width: 950px;
+    border-radius: 12px;
+    padding: 25px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 15px; right: 20px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--muted);
+  }
+
+  .close-btn:hover { color: var(--text); }
+
+  #loader { display: none; text-align: center; padding: 40px; background: var(--card); }
+
+  /* ---------- BADGES ---------- */
+  .badge-return {
+    background: #e74c3c;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 5px;
+  }
+
+  .badge-exchange {
+    background: #3498db;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 5px;
+  }
+
+  .reason-text {
+    display: block;
+    font-size: 11px;
+    color: #e67e22;
+    font-style: italic;
+    margin-top: 4px;
+  }
+
+  /* Small HR in modal should match theme */
+  .modal-content hr { border: 0; border-top: 1px solid var(--border); }
+
+</style>
+
+</head>
+<body>
+
+<div class="toolbar">
+  <span style="font-weight:600;"><i class="fas fa-calendar-alt"></i> Period:</span>
+  <select id="filterType" onchange="toggleDateInputs()">
+    <option value="all">All Records</option>
+    <option value="day">Today</option>
+    <option value="month">This Month</option>
+    <option value="year">This Year</option>
+    <option value="range">Custom Range</option>
+  </select>
+  
+  <div id="dateInputs" style="display:none;">
+    <input type="date" id="startDate"> to <input type="date" id="endDate">
+  </div>
+
+  <button class="btn btn-primary" onclick="loadOrders()"><i class="fas fa-sync"></i> Load</button>
+
+  <div style="margin-left: auto; position: relative;">
+    <input type="text" id="search" placeholder="Search SO ID / Customer..." onkeyup="filterTable()" style="width:250px;">
+    <i class="fas fa-search" style="position:absolute; right:10px; top:12px; color:#aaa;"></i>
+  </div>
+</div>
+
+<div class="card">
+  <table id="mainTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>SO ID</th>
+        <th>Customer</th>
+        <th>Total</th>
+        <th>Payment Status</th>
+        <th>Shipping Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="orderBody"></tbody>
+  </table>
+  <div id="loader"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary)"></i></div>
+</div>
+
+<div id="orderModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">&times;</span>
+    <h3 id="modalTitle">Order Details</h3>
+    <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+    
+    <table id="itemsTable">
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>Size</th>
+          <th>Qty</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+    
+    <div style="text-align:right; margin-top:20px;">
+      <button class="btn" style="background:#ddd;" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let allData = [];
+
+  window.onload = loadOrders;
+
+  function toggleDateInputs() {
+    document.getElementById('dateInputs').style.display = (document.getElementById('filterType').value === 'range') ? 'flex' : 'none';
+  }
+
+  function loadOrders() {
+    const type = document.getElementById('filterType').value;
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+    
+    document.getElementById('loader').style.display = 'block';
+    document.getElementById('orderBody').innerHTML = '';
+
+    google.script.run.withSuccessHandler(data => {
+      allData = data;
+      document.getElementById('loader').style.display = 'none';
+      renderTable(data);
+    }).sdGetOrders(type, start, end);
+  }
+
+  function renderTable(data) {
+    const body = document.getElementById('orderBody');
+    body.innerHTML = data.map(o => `
+      <tr>
+        <td>${o.date}</td>
+        <td><b>${o.id}</b></td>
+        <td>${o.customer}</td>
+        <td>৳ ${o.total.toLocaleString()}</td>
+        <td>
+          <select class="status-dropdown" onchange="updateStatus('${o.id}', 'Receipt Status', this.value)">
+            <option value="Unpaid" ${o.status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
+            <option value="Paid" ${o.status === 'Paid' ? 'selected' : ''}>Paid</option>
+            <option value="Partial" ${o.status === 'Partial' ? 'selected' : ''}>Partial</option>
+          </select>
+        </td>
+        <td>
+          <select class="status-dropdown" onchange="updateStatus('${o.id}', 'Shipping Status', this.value)">
+            <option value="Pending" ${o.shipping === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Shipped" ${o.shipping === 'Shipped' ? 'selected' : ''}>Shipped</option>
+            <option value="Delivered" ${o.shipping === 'Delivered' ? 'selected' : ''}>Delivered</option>
+          </select>
+        </td>
+        <td>
+          <button class="btn btn-primary" style="padding:4px 10px;" onclick="viewOrder('${o.id}')">
+            <i class="fas fa-eye"></i> View
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function updateStatus(soId, field, val) {
+    google.script.run.withSuccessHandler(() => {
+      console.log('Status Updated');
+    }).sdUpdateStatus(soId, field, val);
+  }
+
+  /**
+   * Opens the modal and displays item details, including return/exchange reasons
+   */
+  function viewOrder(soId) {
+    document.getElementById('modalTitle').innerText = 'Loading Order: ' + soId;
+    document.getElementById('itemsBody').innerHTML = '';
+    document.getElementById('orderModal').style.display = 'flex';
+    
+    // Uses the refined backend function that fetches return reasons
+    google.script.run.withSuccessHandler(items => {
+      document.getElementById('modalTitle').innerText = 'Order Summary: ' + soId;
+      document.getElementById('itemsBody').innerHTML = items.map(i => {
+        let typeBadge = '';
+        let reasonHtml = i.Reason ? `<span class="reason-text">Reason: ${i.Reason}</span>` : '';
+        
+        // Handle badge display based on the transaction type
+        if (i.type === 'Return') {
+           typeBadge = '<span class="badge-return">RETURNED</span>';
+        } else if (i.type === 'Exchange') {
+           typeBadge = '<span class="badge-exchange">EXCHANGED</span>';
+        }
+
+        return `
+          <tr>
+            <td>
+              <b>${i.name}</b> ${typeBadge}
+              ${reasonHtml}
+            </td>
+            <td>${i.size}</td>
+            <td>${i.qty}</td>
+            <td>৳ ${i.price.toLocaleString()}</td>
+            <td><b>৳ ${i.total.toLocaleString()}</b></td>
+          </tr>
+        `;
+      }).join('');
+    }).sdGetOrderItems(soId); 
+  }
+
+  function filterTable() {
+    const q = document.getElementById('search').value.toLowerCase();
+    const filtered = allData.filter(o => o.id.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q));
+    renderTable(filtered);
+  }
+
+  function closeModal() { document.getElementById('orderModal').style.display = 'none'; }
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Poppins', sans-serif; background: #f4f7f6; padding: 20px; color: #2c3e50; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    
+    .header { border-bottom: 2px solid #eee; margin-bottom: 20px; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    
+    .selector-box { margin-bottom: 25px; }
+    select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 1rem; }
+    
+    .list-container { border: 1px solid #eee; border-radius: 8px; max-height: 350px; overflow-y: auto; margin-bottom: 20px; }
+    .dim-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #f9f9f9; }
+    .dim-item:hover { background: #fcfcfc; }
+    .dim-item:last-child { border-bottom: none; }
+    
+    .btn-delete { color: #e74c3c; cursor: pointer; padding: 5px; transition: 0.2s; }
+    .btn-delete:hover { transform: scale(1.2); }
+    
+    .add-box { display: flex; gap: 10px; margin-top: 10px; }
+    input[type="text"] { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+    
+    .footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: 0.3s; }
+    .btn-primary { background: #1abc9c; color: white; }
+    .btn-primary:hover { background: #16a085; }
+    .btn-save { background: #3498db; color: white; width: 100%; font-size: 1rem; }
+    
+    .loader { display: none; text-align: center; padding: 20px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2 style="margin:0;"><i class="fas fa-tags"></i> Dimension Manager</h2>
+    <span onclick="google.script.host.close()" style="cursor:pointer;"><i class="fas fa-times"></i></span>
+  </div>
+
+  <div class="selector-box">
+    <label style="font-size: 0.8rem; font-weight: 600; color: #7f8c8d;">Select List to Manage:</label>
+    <select id="dimType" onchange="loadList()">
+      <option value="Item Category">Product Categories</option>
+      <option value="Item Subcategory">Product Subcategories</option>
+      <option value="Brands">Brand Names</option>
+      <option value="State">States/Regions</option>
+      <option value="City">Cities</option>
+      <option value="PMT Mode">Payment Methods</option>
+    </select>
+  </div>
+
+  <div id="loader" class="loader"><i class="fas fa-spinner fa-spin"></i> Loading data...</div>
+
+  <div id="content">
+    <div class="list-container" id="listBody">
+      </div>
+
+    <div class="add-box">
+      <input type="text" id="newItemName" placeholder="Type new item name...">
+      <button class="btn btn-primary" onclick="addItem()"><i class="fas fa-plus"></i> Add</button>
+    </div>
+
+    <div class="footer">
+      <button class="btn btn-save" id="saveBtn" onclick="saveChanges()">Save All Changes to Spreadsheet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let allData = {};
+  let currentList = [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshData();
+  });
+
+  function refreshData() {
+    document.getElementById('loader').style.display = 'block';
+    document.getElementById('content').style.opacity = '0.5';
+    
+    google.script.run.withSuccessHandler(data => {
+      allData = data;
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('content').style.opacity = '1';
+      loadList();
+    }).dimGetAllData();
+  }
+
+  function loadList() {
+    const type = document.getElementById('dimType').value;
+    currentList = [...(allData[type] || [])];
+    renderList();
+  }
+
+  function renderList() {
+    const container = document.getElementById('listBody');
+    if (currentList.length === 0) {
+      container.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">List is empty</div>';
+      return;
+    }
+    
+    container.innerHTML = currentList.map((item, index) => `
+      <div class="dim-item">
+        <span>${item}</span>
+        <i class="fas fa-trash-alt btn-delete" onclick="removeItem(${index})"></i>
+      </div>
+    `).join('');
+  }
+
+  function addItem() {
+    const input = document.getElementById('newItemName');
+    const val = input.value.trim();
+    if (!val) return;
+    
+    if (currentList.includes(val)) {
+      alert("This item already exists in the list.");
+      return;
+    }
+    
+    currentList.push(val);
+    input.value = '';
+    renderList();
+    // Scroll to bottom
+    const container = document.getElementById('listBody');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function removeItem(index) {
+    if (confirm("Are you sure you want to remove '" + currentList[index] + "'?")) {
+      currentList.splice(index, 1);
+      renderList();
+    }
+  }
+
+  function saveChanges() {
+    const type = document.getElementById('dimType').value;
+    const btn = document.getElementById('saveBtn');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    google.script.run.withSuccessHandler(res => {
+      btn.disabled = false;
+      btn.innerText = 'Save All Changes to Spreadsheet';
+      alert("List updated successfully!");
+      // Update local master data
+      allData[type] = [...currentList];
+    }).dimUpdateList(type, currentList);
+  }
+</script>
+
+</body>
+</html>

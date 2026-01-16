@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root { --primary: #1abc9c; --bg: #f4f7f6; --card: #ffffff; --border: #dee2e6; --text: #2c3e50; }
+    body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+    
+    /* TABS */
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab-btn { padding: 12px 25px; border: none; background: #e0e0e0; border-radius: 8px; cursor: pointer; font-weight: 600; color: #666; transition: 0.2s; }
+    .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3); }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    
+    /* CARDS & TABLES */
+    .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.03); margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; color: #555; }
+    td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+    
+    /* ANALYTICS GRID */
+    .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    
+    /* UTILS */
+    select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-family: inherit; }
+    .badge-qty { background: #e3f2fd; color: #1565c0; padding: 3px 8px; border-radius: 10px; font-weight: 600; font-size: 12px; }
+    .badge-rev { background: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 10px; font-weight: 600; font-size: 12px; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('inv')">Inventory Report</button>
+  <button class="tab-btn" onclick="switchTab('sales')">Sales Data</button>
+  <button class="tab-btn" onclick="switchTab('ana')">Analytics</button>
+</div>
+
+<div id="tab-inv" class="tab-content active">
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <h3 style="margin:0;">Stock vs Sales</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <span class="badge-rev">Total Sold: <span id="invTotalSold">0</span></span>
+          <span class="badge-qty">Total Available: <span id="invTotalAvailable">0</span></span>
+        </div>
+      </div>
+      <input type="text" id="invSearch" placeholder="Search product..." onkeyup="filterInv()" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+    </div>
+    <div style="max-height:600px; overflow-y:auto;">
+      <table id="invTable">
+        <thead>
+          <tr><th>Category</th><th>Product Name</th><th>Brand</th><th style="text-align:center;">Sold Qty</th><th style="text-align:center;">Available</th></tr>
+        </thead>
+        <tbody id="invBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="tab-sales" class="tab-content">
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h3 style="margin:0;">Sales Trends</h3>
+      <select id="salesPeriod" onchange="loadSalesData()">
+        <option value="day">Daily</option>
+        <option value="month" selected>Monthly</option>
+        <option value="year">Yearly</option>
+      </select>
+    </div>
+    <table id="salesTable">
+      <thead>
+        <tr><th>Date / Period</th><th>Total Orders</th><th>Total Revenue</th></tr>
+      </thead>
+      <tbody id="salesBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="tab-ana" class="tab-content">
+  <div class="analytics-grid">
+    
+    <div class="card">
+      <h3 style="margin-top:0; color:#e67e22;"><i class="fas fa-tshirt"></i> Most Sold Products</h3>
+      <table>
+        <thead><tr><th>Product (Size)</th><th style="text-align:right;">Sold</th></tr></thead>
+        <tbody id="topProdBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0; color:#3498db;"><i class="fas fa-map-marker-alt"></i> Top Cities</h3>
+      <table>
+        <thead><tr><th>City</th><th style="text-align:right;">Revenue</th></tr></thead>
+        <tbody id="topCityBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0; color:#9b59b6;"><i class="fas fa-users"></i> Frequent Customers</h3>
+      <table>
+        <thead><tr><th>Customer</th><th style="text-align:right;">Orders</th></tr></thead>
+        <tbody id="topCustBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  let inventoryCache = [];
+
+  // Initialize
+  $(document).ready(() => {
+    loadInventory();
+    loadSalesData();
+    loadAnalytics();
+  });
+
+  function switchTab(id) {
+    $('.tab-btn').removeClass('active');
+    $(`button[onclick="switchTab('${id}')"]`).addClass('active');
+    $('.tab-content').removeClass('active');
+    $(`#tab-${id}`).addClass('active');
+  }
+
+  // --- 1. INVENTORY ---
+  function loadInventory() {
+    google.script.run.withSuccessHandler(data => {
+      inventoryCache = data;
+      renderInv(data);
+    }).rptGetInventoryReport();
+  }
+
+  function renderInv(list) {
+    // Totals (based on current view: full list or filtered list)
+    const totalSold = list.reduce((sum, i) => sum + (Number(i.sold) || 0), 0);
+    const totalAvailable = list.reduce((sum, i) => sum + (Number(i.stock) || 0), 0);
+    $('#invTotalSold').text(totalSold.toLocaleString());
+    $('#invTotalAvailable').text(totalAvailable.toLocaleString());
+
+    const html = list.map(i => `
+      <tr>
+        <td>${i.category}</td>
+        <td><b>${i.name}</b></td>
+        <td>${i.brand}</td>
+        <td style="text-align:center;"><span class="badge-rev">${i.sold}</span></td>
+        <td style="text-align:center; font-weight:bold; color:${i.stock<5?'red':'green'}">${i.stock}</td>
+      </tr>
+    `).join('');
+    $('#invBody').html(html);
+  }
+
+  function filterInv() {
+    const term = $('#invSearch').val().toLowerCase();
+    const filtered = inventoryCache.filter(i => 
+      i.name.toLowerCase().includes(term) || i.category.toLowerCase().includes(term)
+    );
+    renderInv(filtered);
+  }
+
+  // --- 2. SALES DATA ---
+  function loadSalesData() {
+    const period = $('#salesPeriod').val();
+    $('#salesBody').html('<tr><td colspan="3">Loading...</td></tr>');
+    
+    google.script.run.withSuccessHandler(data => {
+      if(!data.length) { $('#salesBody').html('<tr><td colspan="3">No data available.</td></tr>'); return; }
+      
+      const html = data.map(d => `
+        <tr>
+          <td>${d.date}</td>
+          <td>${d.orders} Orders</td>
+          <td style="font-weight:bold;">৳${d.revenue.toLocaleString()}</td>
+        </tr>
+      `).join('');
+      $('#salesBody').html(html);
+    }).rptGetSalesData(period);
+  }
+
+  // --- 3. ANALYTICS ---
+  function loadAnalytics() {
+    google.script.run.withSuccessHandler(res => {
+      // Products
+      $('#topProdBody').html(res.topProducts.map(p => 
+        `<tr><td>${p.name}</td><td style="text-align:right; font-weight:bold;">${p.qty}</td></tr>`
+      ).join(''));
+
+      // Cities
+      $('#topCityBody').html(res.topCities.map(c => 
+        `<tr><td>${c.city}</td><td style="text-align:right;">৳${c.revenue.toLocaleString()}</td></tr>`
+      ).join(''));
+
+      // Customers
+      $('#topCustBody').html(res.topCustomers.map(c => 
+        `<tr><td>${c.name}</td><td style="text-align:right;">${c.count} <small>Orders</small></td></tr>`
+      ).join(''));
+
+    }).rptGetAnalytics();
+  }
+</script>
+</body>
+</html>

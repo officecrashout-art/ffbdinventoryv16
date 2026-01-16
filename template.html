@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Montserrat:wght@600&display=swap" rel="stylesheet">
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root {
+    --primary: #1abc9c;
+    --bg-dark: #f0f2f5;       /* Premium Light Grey */
+    --bg-card: #ffffff;
+    --bg-input: #f8f9fa;
+    --bg-hover: #eef2f7;
+    --text-main: #2c3e50;
+    --text-muted: #8395a7;
+    --border: #e1e4e8;
+    --shadow: 0 4px 20px rgba(0,0,0,0.05); /* Soft Shadow */
+  }
+  /* --- 2. DARK MODE OVERRIDES --- */
+  [data-theme="dark"] {
+    --bg-dark: #0f111a;       /* Deep Blue-Black */
+    --bg-card: #1e232e;       /* Card BG */
+    --bg-input: #2a303c;
+    --bg-hover: #2c3545;
+    --text-main: #e6edf3;
+    --text-muted: #8b949e;
+    --border: #363c45;
+    --shadow: 0 4px 20px rgba(0,0,0,0.4); /* Stronger Shadow */
+  }
+
+  /* --- 3. GLOBAL RESETS --- */
+  body, html { margin: 0; padding: 0; height: 100%; font-family: 'Poppins', sans-serif; }
+  body, #main-app { background-color: var(--bg-dark) !important; color: var(--text-main) !important; }
+  
+  /* Universal Component Fixes */
+  .card, .panel, .modal-content, .dash-card {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-main) !important;
+  }
+  
+  input, select, textarea {
+    background-color: var(--bg-input) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border) !important;
+  }
+
+  th { background-color: var(--bg-card) !important; color: var(--text-muted) !important; border-bottom: 2px solid var(--border) !important; }
+  td { border-bottom: 1px solid var(--border) !important; color: var(--text-main) !important; }
+
+
+/* --- 4. SELECT2 DARK MODE FIX (Aggressive) --- */
+  [data-theme="dark"] .select2-container--default .select2-selection--single {
+    background-color: var(--bg-input) !important; border-color: var(--border) !important; color: var(--text-main) !important;
+  }
+  [data-theme="dark"] .select2-dropdown { background-color: var(--bg-card) !important; border-color: var(--border) !important; }
+  [data-theme="dark"] .select2-results__option { background-color: var(--bg-card) !important; color: var(--text-main) !important; }
+  [data-theme="dark"] .select2-search__field { background-color: var(--bg-input) !important; color: var(--text-main) !important; }
+  [data-theme="dark"] .select2-selection__rendered { color: var(--text-main) !important; }
+
+ /* --- 5. LAYOUT --- */
+  #login-root { position: fixed; inset: 0; z-index: 10000; background: var(--bg-dark); display: flex; }
+  #sidebar { width: 260px; background-color: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.02); }
+  .brand-section { padding: 30px 20px; text-align: center; border-bottom: 1px solid var(--border); }
+  .brand-section h1 { color: var(--primary); margin: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+  .nav-menu { flex: 1; padding: 20px 0; overflow-y: auto; }
+  .nav-item { padding: 12px 25px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); text-decoration: none; transition: 0.2s; font-weight: 500; font-size: 0.9rem; }
+  .nav-item:hover { background-color: var(--bg-hover); color: var(--primary); }
+  .nav-item.active { background-color: rgba(26, 188, 156, 0.1); color: var(--primary); border-right: 4px solid var(--primary); }
+  #main-content { flex: 1; display: flex; flex-direction: column; }
+  header { height: 65px; background-color: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
+  #page-container { flex: 1; padding: 20px; overflow-y: auto; }
+
+    /* 2. LOGIN SCREEN (HARD-CODED COLORS, NOT AFFECTED BY THEME) */
+    #login-root{
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: #05070a; /* FULL BLACK */
+      color: #e5e7eb;
+    }
+
+    .login-screen{
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 18px;
+    }
+
+    .login-brand{
+      font-family: 'Montserrat', sans-serif;
+      font-size: 34px;
+      letter-spacing: 3px;
+      font-weight: 700;
+      color: #1abc9c; /* hard-coded */
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .login-card{
+      width: 100%;
+      padding: 26px 26px 18px;
+      background: #0b0f14; /* black card */
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.55);
+    }
+
+    .login-subtitle{
+      margin: 0 0 18px 0;
+      color: rgba(229,231,235,0.72);
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+
+    /* force login inputs to ignore theme vars */
+    #login-root .login-form label{
+      display:block;
+      text-align:left;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: rgba(229,231,235,0.92);
+      font-size: 13px;
+    }
+
+    #login-root .login-form input{
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 14px;
+      border-radius: 12px;
+      border: 1px solid #273244 !important;
+      background: #0f151c !important;
+      color: #e5e7eb !important;
+      outline: none;
+      font-size: 14px;
+      transition: 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    #login-root .login-form input::placeholder{
+      color: rgba(229,231,235,0.35);
+    }
+
+    #login-root .login-form input:focus{
+      border-color: rgba(26,188,156,0.85) !important;
+      box-shadow: 0 0 0 4px rgba(26,188,156,0.14);
+    }
+
+    #login-root .login-form button{
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, #111827, #0b0f14);
+      color: #ffffff;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    #login-root .login-form button:hover{
+      transform: translateY(-1px);
+      border-color: rgba(26,188,156,0.55);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.35);
+    }
+
+    .login-footer{
+      margin-top: 18px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(229,231,235,0.35);
+    }
+
+    /* === INVENTORY LOGO (hard-coded colors) === */
+    .inventory-logo{
+      width: 190px;
+      height: 190px;
+      border-radius: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.45);
+      transform-origin: 50% 75%;
+      position: relative;
+      will-change: transform, opacity, filter;
+      margin-bottom: 6px;
+    }
+
+    .logo-badge{
+      width: 120px;
+      height: 120px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      background: rgba(26,188,156,0.14);
+      border: 1px solid rgba(26,188,156,0.35);
+    }
+
+    .inventory-logo i{
+      font-size: 56px;
+      color: #1abc9c; /* hard-coded */
+      filter: drop-shadow(0 10px 18px rgba(26,188,156,0.25));
+    }
+
+    .logo-text{
+      font-size: 11px;
+      letter-spacing: 4px;
+      opacity: 0.75;
+      color: rgba(229,231,235,0.78);
+    }
+
+    /* Premium red glow on failure */
+    .logo-fail{
+      box-shadow:
+        0 18px 60px rgba(0,0,0,0.45),
+        0 0 0 1px rgba(239,68,68,0.35),
+        0 0 28px rgba(239,68,68,0.35);
+      border-color: rgba(239,68,68,0.45);
+    }
+
+    /* “Real” collapse: drops down then springs back */
+    @keyframes logoDropCollapse{
+      0%   { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+      15%  { transform: translateY(-6px) scale(1.02) rotate(-2deg); }
+      35%  { transform: translateY(34px) scale(0.98) rotate(3deg); }
+      55%  { transform: translateY(120px) scale(0.92) rotate(10deg); opacity: 0.85; }
+      70%  { transform: translateY(165px) scale(0.88) rotate(14deg); opacity: 0.55; }
+      85%  { transform: translateY(40px) scale(0.96) rotate(-2deg); opacity: 1; }
+      100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .logo-drop{ animation: logoDropCollapse 0.85s cubic-bezier(.2,.9,.2,1); }
+
+    /* Error text under logo (smooth) */
+    .logo-error{
+      margin-top: 6px;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.86);
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(239,68,68,0.14);
+      border: 1px solid rgba(239,68,68,0.24);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      opacity: 0;
+      transform: translateY(-6px);
+      animation: errorReveal 0.35s ease forwards;
+    }
+
+    @keyframes errorReveal{ to { opacity: 1; transform: translateY(0); } }
+
+    /* 3. MAIN APP STRUCTURE (RESTORED FEATURES) */
+    #main-app { display: none; width: 100%; height: 100vh; background-color: var(--bg-dark); }
+    #sidebar { width: 260px; background-color: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: var(--shadow); }
+    .brand-section { padding: 30px 20px; text-align: center; border-bottom: 1px solid var(--border); }
+    .brand-section h1 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; margin: 0; color: var(--primary); text-transform: uppercase; }
+    
+    .nav-menu { flex: 1; padding: 20px 0; overflow-y: auto; }
+    .nav-item { padding: 12px 25px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); text-decoration: none; transition: 0.2s; font-size: 0.9rem; }
+    .nav-item:hover { background-color: var(--bg-hover); color: var(--primary); }
+    .nav-item.active { background-color: rgba(26, 188, 156, 0.1); color: var(--primary); border-right: 4px solid var(--primary); font-weight: 600; }
+
+    #main-content { flex: 1; display: flex; flex-direction: column; }
+    header { height: 65px; background-color: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-shadow: var(--shadow); }
+
+    .theme-switch-wrapper { display: flex; align-items: center; gap: 10px; }
+    .theme-switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    #page-container { flex: 1; padding: 20px; overflow-y: auto; }
+    .logout-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-left: 20px; }
+    .logout-btn:hover { color: #ef4444; border-color: #ef4444; }
+
+    /* --- SELECT2 DARK MODE FIX (AGGRESSIVE) --- */
+  [data-theme="dark"] .select2-container--default .select2-selection--single {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border) !important;
+    color: var(--text-main) !important;
+  }
+  [data-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--text-main) !important;
+  }
+  [data-theme="dark"] .select2-dropdown {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border) !important;
+    color: var(--text-main) !important;
+  }
+  [data-theme="dark"] .select2-results__option {
+    color: var(--text-main) !important;
+    background-color: var(--bg-card) !important;
+  }
+  [data-theme="dark"] .select2-search__field {
+    background-color: var(--bg-dark) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border) !important;
+  }
+  [data-theme="dark"] .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--primary) !important;
+    color: #fff !important;
+  }
+  [data-theme="dark"] .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: var(--text-muted) transparent transparent transparent !important;
+  }
+  </style>
+</head>
+<body data-theme="light">
+
+  <div id="login-root"></div>
+
+  <div id="main-app">
+    <div style="display: flex; height: 100%;">
+      <aside id="sidebar">
+        <div class="brand-section"><h1>Fashion Fizz BD</h1></div>
+        <nav class="nav-menu">
+  <a href="<?= getScriptUrl() ?>?page=dashboard" class="nav-item <?= currentPage == 'dashboard' ? 'active' : '' ?>"><i class="fas fa-chart-pie"></i> Dashboard</a>
+  <a href="<?= getScriptUrl() ?>?page=inventory" class="nav-item <?= currentPage == 'inventory' ? 'active' : '' ?>"><i class="fas fa-boxes"></i> Inventory</a>
+  
+  <a href="<?= getScriptUrl() ?>?page=sales" class="nav-item <?= currentPage == 'sales' ? 'active' : '' ?>"><i class="fas fa-shopping-bag"></i> Sales Orders</a>
+  
+  <a href="<?= getScriptUrl() ?>?page=sales_details" class="nav-item <?= currentPage == 'sales_details' ? 'active' : '' ?>"><i class="fas fa-list-ul"></i> Sales History</a>
+  
+  <a href="<?= getScriptUrl() ?>?page=purchases" class="nav-item <?= currentPage == 'purchases' ? 'active' : '' ?>"><i class="fas fa-truck-loading"></i> Purchases</a>
+  <a href="<?= getScriptUrl() ?>?page=receipts" class="nav-item <?= currentPage == 'receipts' ? 'active' : '' ?>"><i class="fas fa-cash-register"></i> Receipts</a>
+  <a href="<?= getScriptUrl() ?>?page=payments" class="nav-item <?= currentPage == 'payments' ? 'active' : '' ?>"><i class="fas fa-wallet"></i> Payments</a>
+  <a href="<?= getScriptUrl() ?>?page=customers" class="nav-item <?= currentPage == 'customers' ? 'active' : '' ?>"><i class="fas fa-user-friends"></i> Customers</a>
+  <a href="<?= getScriptUrl() ?>?page=suppliers" class="nav-item <?= currentPage == 'suppliers' ? 'active' : '' ?>"><i class="fas fa-store"></i> Suppliers</a>
+  <a href="<?= getScriptUrl() ?>?page=reports" class="nav-item <?= currentPage == 'reports' ? 'active' : '' ?>"><i class="fas fa-chart-line"></i> Reports</a>
+  <a href="<?= getScriptUrl() ?>?page=returns" class="nav-item <?= currentPage == 'returns' ? 'active' : '' ?>"><i class="fas fa-exchange-alt"></i> Returns</a>
+</nav>
+      </aside>
+
+      <main id="main-content">
+        <header>
+          <div style="font-weight: 500; display: flex; align-items: center;">
+            <i class="fas fa-user-shield" style="color: var(--primary); margin-right: 10px;"></i>
+            Management Panel
+            <button class="logout-btn" onclick="handleLogout()">Logout</button>
+          </div>
+          <div class="theme-switch-wrapper">
+            <i class="fas fa-sun" style="color: #f39c12; font-size: 14px;"></i>
+            <label class="theme-switch">
+              <input type="checkbox" id="theme-cb" onclick="toggleTheme()">
+              <span class="slider"></span>
+            </label>
+            <i class="fas fa-moon" style="color: #f1c40f; font-size: 14px;"></i>
+          </div>
+        </header>
+        <div id="page-container">
+          <?!= include(contentTemplate); ?>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const LoginPortal = () => {
+      const [u, setU] = useState('');
+      const [p, setP] = useState('');
+      const [isShy, setIsShy] = useState(false);
+      const [isAngry, setIsAngry] = useState(false);
+      const [msg, setMsg] = useState('');
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setMsg('');
+        google.script.run.withSuccessHandler(res => {
+          if (res.status === 'success') {
+            sessionStorage.setItem('ff_session', 'active');
+            document.getElementById('login-root').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+          } else {
+            // Force re-play of the drop animation + glow on every failed attempt
+            setIsAngry(false);
+            setMsg('');
+            setTimeout(() => {
+              setIsAngry(true);
+              setMsg('Wrong password');
+            }, 10);
+            setTimeout(() => setIsAngry(false), 900);
+          }
+        }).checkLogin(u, p);
+      };
+
+      return (
+        <div className="login-screen">
+          <div className="login-brand">Fashion Fizz BD</div>
+
+          <div className={`inventory-logo ${isAngry ? 'logo-drop logo-fail' : ''}`}>
+            <div className="logo-badge">
+              <i className="fas fa-boxes-stacked"></i>
+            </div>
+            <div className="logo-text">INVENTORY</div>
+          </div>
+
+          {msg && <div className="logo-error">{msg}</div>}
+
+          <div className="login-card">
+            <p className="login-subtitle">Enter credentials to access the portal</p>
+            <div className="login-form">
+              <form onSubmit={handleLogin}>
+                <label>Username</label>
+                <input
+                  type="text"
+                  value={u}
+                  onChange={e=>setU(e.target.value)}
+                  placeholder="Email or Username"
+                  required
+                />
+
+                <label>Password</label>
+                <input
+                  type="password"
+                  value={p}
+                  onFocus={()=>setIsShy(true)}
+                  onBlur={()=>setIsShy(false)}
+                  onChange={e=>setP(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+
+                <button type="submit">ACCESS SYSTEM</button>
+              </form>
+            </div>
+          </div>
+
+          <div className="login-footer">DEVELOPED BY TALHA JALAL</div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('login-root'));
+    root.render(<LoginPortal />);
+
+    // --- SYSTEM UTILS ---
+    if (sessionStorage.getItem('ff_session') === 'active') {
+      document.getElementById('login-root').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+    }
+
+    window.handleLogout = () => { sessionStorage.removeItem('ff_session'); location.reload(); };
+    window.toggleTheme = () => {
+      const theme = document.getElementById('theme-cb').checked ? 'dark' : 'light';
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    };
+
+    (function() {
+      const theme = localStorage.getItem('theme') || 'light';
+      document.body.setAttribute('data-theme', theme);
+      const cb = document.getElementById('theme-cb');
+      if(cb) cb.checked = (theme === 'dark');
+    })();
+    function openSalesDetails() {
+      google.script.run.sdShowSalesDetailsUI();
+    }
+  </script>
+</body>
+</html>

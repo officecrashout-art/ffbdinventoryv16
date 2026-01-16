@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root { 
+      --primary: #1abc9c; /* TEAL */
+      --bg: #f4f7f6; 
+      --card: #fff; 
+      --border: #dee2e6; 
+      --dark: #2c3e50; 
+    }
+
+    body { font-family: 'Poppins', sans-serif; background: var(--bg); padding: 20px; color: var(--dark); }
+    .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; font-size: 13px; color: #666; }
+    td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+
+    .btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; transition:0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-outline { background: white; border: 1px solid #ccc; color: #555; }
+    .btn-outline:hover { background: #f9f9f9; }
+
+    .badge-due { background: #ffebee; color: #c62828; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight:600; }
+    .badge-ok { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight:600; }
+
+    .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+    .modal-content { background:white; padding:25px; border-radius:12px; width:700px; max-height:85vh; overflow-y:auto; position: relative; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+    label { display: block; margin-bottom: 5px; font-size: 12px; font-weight: 600; color: #777; }
+    input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 style="margin:0; color:var(--primary);"><i class="fas fa-truck"></i> Suppliers</h2>
+    <input type="text" id="search" placeholder="Search ID, Name or Phone..." onkeyup="render()" style="padding:10px; border:1px solid #ccc; border-radius:6px; width:250px;">
+  </div>
+  
+  <div class="table-container">
+    <table id="table">
+      <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Total Purchases</th><th>Paid</th><th>Balance</th><th>Actions</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="histModal" class="modal">
+  <div class="modal-content" style="width:600px;">
+    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+      <h3 style="margin:0;">Ledger History</h3>
+      <i class="fas fa-times" onclick="$('#histModal').hide()" style="cursor:pointer;"></i>
+    </div>
+    <div id="histContent"></div>
+  </div>
+</div>
+
+<div id="prodModal" class="modal">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+      <h3 style="margin:0;">Products Purchased</h3>
+      <i class="fas fa-times" onclick="$('#prodModal').hide()" style="cursor:pointer;"></i>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="prodTable">
+        <thead>
+          <tr><th>Image</th><th>Product Name</th><th>Category</th><th>Purchased</th><th>Avg Cost</th><th>Action</th></tr>
+        </thead>
+        <tbody id="prodBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="editModal" class="modal" style="z-index: 1100;">
+  <div class="modal-content" style="width: 400px;">
+    <h3 style="margin-top:0;">Edit Product Details</h3>
+    <input type="hidden" id="editId">
+    
+    <div class="form-grid" style="grid-template-columns: 1fr;">
+      <div><label>Product Name</label><input type="text" id="editName"></div>
+      <div><label>Brand</label><input type="text" id="editBrand"></div>
+      <div><label>Category</label><input type="text" id="editCat"></div>
+      <div><label>Image URL</label><input type="text" id="editImg"></div>
+    </div>
+
+    <div style="text-align:right; margin-top:20px;">
+      <button class="btn btn-outline" onclick="$('#editModal').hide()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProductEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  let db = [];
+  $(document).ready(() => {
+    google.script.run.withSuccessHandler(data => { db = data; render(); }).supGetSuppliers();
+  });
+
+  // --- UPDATED RENDER FUNCTION WITH SEARCH ---
+  function render() {
+    const term = $('#search').val().toLowerCase();
+    
+    // Check ID, Name, AND Contact for the search term
+    const list = db.filter(s => 
+      (s['Supplier Name'] && s['Supplier Name'].toString().toLowerCase().includes(term)) ||
+      (s['Supplier ID'] && s['Supplier ID'].toString().toLowerCase().includes(term)) ||
+      (s['Supplier Contact'] && s['Supplier Contact'].toString().toLowerCase().includes(term))
+    );
+    
+    if (list.length === 0) {
+      $('#tbody').html('<tr><td colspan="7" style="text-align:center; padding:20px;">No suppliers found.</td></tr>');
+      return;
+    }
+
+    const html = list.map(s => `
+      <tr>
+        <td style="font-weight:bold; color:#777;">${s['Supplier ID']}</td>
+        <td><b>${s['Supplier Name']}</b><br><small>${s['City']||''}</small></td>
+        <td>${s['Supplier Contact']}</td>
+        <td>৳${(s['Total Purchases']||0).toLocaleString()}</td>
+        <td>৳${(s['Total Payments']||0).toLocaleString()}</td>
+        <td><span class="${(s['Balance Payable']>0)?'badge-due':'badge-ok'}">৳${(s['Balance Payable']||0).toLocaleString()}</span></td>
+        <td>
+          <button class="btn btn-outline" onclick="viewProds('${s['Supplier ID']}')" title="View Products"><i class="fas fa-box"></i> Products</button>
+          <button class="btn btn-outline" onclick="viewHist('${s['Supplier ID']}')" title="View Ledger"><i class="fas fa-history"></i> History</button>
+        </td>
+      </tr>`).join('');
+    $('#tbody').html(html);
+  }
+
+  // --- HISTORY ---
+  function viewHist(id) {
+    $('#histContent').html('Loading...');
+    $('#histModal').css('display','flex');
+    google.script.run.withSuccessHandler(h => {
+      if(!h.length) { $('#histContent').html('<p style="text-align:center; color:#999;">No history found.</p>'); return; }
+      const html = `<table style="font-size:13px;"><thead><tr><th>Date</th><th>Type</th><th>Ref</th><th style="text-align:right;">Amount</th></tr></thead><tbody>` + 
+        h.map(r => `<tr>
+          <td>${new Date(r.date).toLocaleDateString()}</td>
+          <td><span style="background:${r.type=='Payment'?'#e8f5e9':'#e3f2fd'}; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:600; color:${r.type=='Payment'?'green':'blue'};">${r.type}</span></td>
+          <td>${r.ref}</td>
+          <td style="text-align:right; font-weight:bold;">৳${Number(r.amount).toLocaleString()}</td>
+        </tr>`).join('') + `</tbody></table>`;
+      $('#histContent').html(html);
+    }).supGetHistory(id);
+  }
+
+  // --- PRODUCTS ---
+  function viewProds(id) {
+    $('#prodBody').html('<tr><td colspan="6" style="text-align:center;">Loading products...</td></tr>');
+    $('#prodModal').css('display','flex');
+    
+    google.script.run.withSuccessHandler(items => {
+      if(!items.length) { $('#prodBody').html('<tr><td colspan="6" style="text-align:center;">No products purchased from this supplier.</td></tr>'); return; }
+      
+      const html = items.map(i => `
+        <tr>
+          <td><img src="${i.image || 'https://placehold.co/40'}" style="width:40px; height:40px; border-radius:4px; object-fit:cover;"></td>
+          <td><b>${i.name}</b><br><small style="color:#888;">${i.id}</small></td>
+          <td>${i.category}</td>
+          <td><span style="background:#f3e5f5; color:#7b1fa2; padding:3px 8px; border-radius:10px; font-size:12px; font-weight:600;">${i.totalPurchased}</span></td>
+          <td>৳${i.avgCost}</td>
+          <td><button class="btn btn-outline" onclick='openEdit(${JSON.stringify(i)})'><i class="fas fa-edit"></i> Edit</button></td>
+        </tr>
+      `).join('');
+      $('#prodBody').html(html);
+    }).supGetSupplierItems(id);
+  }
+
+  // --- EDIT PRODUCT ---
+  function openEdit(item) {
+    $('#editId').val(item.id);
+    $('#editName').val(item.name);
+    $('#editBrand').val(item.brand);
+    $('#editCat').val(item.category);
+    $('#editImg').val(item.image);
+    $('#editModal').css('display','flex'); // Opens on top of ProdModal
+  }
+
+  function saveProductEdit() {
+    const data = {
+      id: $('#editId').val(),
+      name: $('#editName').val(),
+      brand: $('#editBrand').val(),
+      category: $('#editCat').val(),
+      image: $('#editImg').val()
+    };
+    
+    $(event.target).text('Saving...').prop('disabled', true);
+    
+    google.script.run.withSuccessHandler(() => {
+      alert("Product Updated!");
+      $('#editModal').hide();
+      $('#prodModal').hide(); // Close parent to force refresh next time
+      $(event.target).text('Save Changes').prop('disabled', false);
+    }).supUpdateItemDetails(data);
+  }
+</script>
+</body>
+</html>
